@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSwap Campus — Peer-to-Peer Knowledge Exchange</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-info">
+          <h1>SkillSwap Campus</h1>
+          <p>Peer Knowledge Network</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Navigation</div>
+        <a class="nav-link active" data-view="dashboard">
+          <span>📊</span> Dashboard
+        </a>
+        <a class="nav-link" data-view="profile">
+          <span>👤</span> My Profile
+        </a>
+        <a class="nav-link" data-view="matchmaking">
+          <span>✨</span> Find Partners
+          <span class="nav-badge">Smart Match</span>
+        </a>
+        <a class="nav-link" data-view="chains">
+          <span>🔄</span> Skill Swap Chains
+          <span class="nav-badge" style="background: #ECFDF5; color: #065F46; border-color: #A7F3D0;">Signature</span>
+        </a>
+
+        <div class="nav-section-title">Learning & Sessions</div>
+        <a class="nav-link" data-view="sessions">
+          <span>📅</span> Sessions
+        </a>
+        <a class="nav-link" data-view="notes">
+          <span>📝</span> Shared Notes
+        </a>
+        <a class="nav-link" data-view="roadmaps">
+          <span>🗺️</span> Learning Roadmaps
+        </a>
+
+        <div class="nav-section-title">Campus Insights</div>
+        <a class="nav-link" data-view="heatmap">
+          <span>🔥</span> Campus Skill Heatmap
+        </a>
+        <a class="nav-link" data-view="achievements">
+          <span>🏆</span> Achievements & XP
+        </a>
+        <a class="nav-link" data-view="report">
+          <span>📄</span> Learning Report
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="demo-status-pill">
+          <div class="pulse-dot"></div>
+          <span>Live Demo Environment</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+          <div class="campus-tag">
+            <span>🎓</span>
+            <span>Hackathon Campus Edition</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Demo Student Switcher -->
+          <div class="demo-switcher">
+            <label for="studentSwitcher">Viewing as:</label>
+            <select id="studentSwitcher" class="student-select">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+
+          <button class="btn btn-secondary btn-sm" id="resetDemoBtn" title="Re-seed demo database with clean sample data">
+            🔄 Reset Demo
+          </button>
+
+          <!-- Current Student Avatar Pill -->
+          <div class="profile-pill">
+            <img src="" id="topbarUserAvatar" class="user-avatar" alt="Avatar"/>
+            <div class="user-meta">
+              <span class="user-name" id="topbarUserName">Loading...</span>
+              <span class="user-xp-badge" id="topbarUserLevel">Lvl 1 (0 XP)</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <div class="page-container">
+
+        <!-- 1. Dashboard View -->
+        <section id="view-dashboard" class="view-section active">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Welcome back, <span id="dashWelcomeName" style="color: #7C3AED;">Student</span>! 👋</h1>
+              <p class="page-subtitle">"Your skills are someone else's next breakthrough."</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" onclick="window.app.navigateTo('matchmaking')">
+                <span>🔍</span> Find Match
+              </button>
+              <button class="btn btn-secondary" onclick="window.app.navigateTo('chains')">
+                <span>🔄</span> Discover Chains
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon purple">🎓</div>
+              <div class="stat-info">
+                <span class="stat-value" id="dashStatSessions">0</span>
+                <span class="stat-label">Total Swaps Completed</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon blue">💡</div>
+              <div class="stat-info">
+                <span class="stat-value" id="dashStatSkillsLearned">0</span>
+                <span class="stat-label">Skills in Learning Goals</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon emerald">⏱️</div>
+              <div class="stat-info">
+                <span class="stat-value" id="dashStatTeachingHours">0.0h</span>
+                <span class="stat-label">Campus Teaching Hours</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon amber">🔥</div>
+              <div class="stat-info">
+                <span class="stat-value" id="dashStatStreak">1 wk</span>
+                <span class="stat-label">Weekly Activity Streak</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Dashboard Split -->
+          <div class="dashboard-grid">
+            <div>
+              <!-- Recommended Matches -->
+              <div class="card">
+                <div class="card-header">
+                  <h2 class="card-title"><span>🎯</span> Smart Match Recommendations</h2>
+                  <button class="btn btn-secondary btn-sm" onclick="window.app.navigateTo('matchmaking')">View All Matches →</button>
+                </div>
+                <div id="dashRecommendedPartners">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+
+              <!-- Upcoming Sessions -->
+              <div class="card">
+                <div class="card-header">
+                  <h2 class="card-title"><span>📅</span> Upcoming Learning Sessions</h2>
+                  <button class="btn btn-secondary btn-sm" onclick="window.app.navigateTo('sessions')">All Sessions →</button>
+                </div>
+                <div id="dashUpcomingSessions" class="session-list">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <!-- Skill Gap Snapshot Chart -->
+              <div class="card">
+                <div class="card-header">
+                  <h2 class="card-title"><span>🔥</span> Campus Skill Shortages</h2>
+                </div>
+                <p style="font-size: 0.8rem; color: #64748B; margin-bottom: 12px;">Top high-demand skills where mentors are most needed.</p>
+                <div style="height: 220px; position: relative;">
+                  <canvas id="dashGapChart"></canvas>
+                </div>
+                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 14px;" onclick="window.app.navigateTo('heatmap')">
+                  Explore Full Heatmap →
+                </button>
+              </div>
+
+              <!-- Signature Feature Spotlight -->
+              <div class="card" style="background: #F5F3FF; border: 1px solid #DDD6FE;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <span style="font-size: 1.25rem;">🔄</span>
+                  <h3 style="font-size: 1rem; color: #0F172A; font-weight: 700;">Skill Swap Chains</h3>
+                </div>
+                <p style="font-size: 0.82rem; color: #475569; line-height: 1.5; margin-bottom: 14px;">
+                  Don't have a direct 1-to-1 match? Our directed graph algorithm detects 3+ person circular skill swaps across campus!
+                </p>
+                <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="window.app.navigateTo('chains')">
+                  Launch Chain Visualizer
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Profile View -->
+        <section id="view-profile" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">My Student Profile</h1>
+              <p class="page-subtitle">Manage your campus identity, teaching proficiencies, and availability.</p>
+            </div>
+            <button class="btn btn-primary" onclick="window.app.openEditProfileModal()">
+              ✏️ Edit Profile Info
+            </button>
+          </div>
+
+          <!-- Profile Overview Banner -->
+          <div class="card" style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+            <img src="" id="profileAvatarLarge" style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent-purple); object-fit: cover;" alt="Profile"/>
+            <div style="flex: 1; min-width: 250px;">
+              <h2 id="profileName" style="font-size: 1.5rem; color: #0F172A; margin-bottom: 4px;">Student Name</h2>
+              <div id="profileCourseYear" style="color: #7C3AED; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px;">Course • Year</div>
+              <p id="profileBio" style="color: #334155; font-size: 0.9rem; line-height: 1.5; margin-bottom: 8px;"></p>
+              <div style="display: flex; gap: 20px; font-size: 0.85rem; color: #64748B;">
+                <span>📧 <span id="profileEmail" style="color: #0F172A; font-weight: 500;"></span></span>
+                <span>⭐ Mentor Rating: <strong id="profileRatingAvg" style="color: #D97706;"></strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- Skills Offered -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title"><span>👨‍🏫</span> Skills I Can Teach</h3>
+                <button class="btn btn-secondary btn-sm" onclick="window.app.addSkill('offer')">+ Add Skill</button>
+              </div>
+              <div id="profileSkillsOffered"></div>
+            </div>
+
+            <!-- Skills Wanted -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title"><span>🎒</span> Skills I Want to Learn</h3>
+                <button class="btn btn-secondary btn-sm" onclick="window.app.addSkill('want')">+ Add Skill</button>
+              </div>
+              <div id="profileSkillsWanted"></div>
+            </div>
+          </div>
+
+          <!-- Weekly Availability -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title"><span>🕒</span> Weekly Schedule & Availability</h3>
+            </div>
+            <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 12px;">
+              Your active weekly time windows used by the Free-Slot Finder to calculate calendar overlap with peer partners.
+            </p>
+            <div id="profileAvailabilityList"></div>
+          </div>
+        </section>
+
+        <!-- 3. Smart Matchmaking View -->
+        <section id="view-matchmaking" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Smart Matchmaking</h1>
+              <p class="page-subtitle">Algorithmic peer pairing with transparent 4-component compatibility scoring.</p>
+            </div>
+          </div>
+
+          <div id="matchmakingContainer">
+            <!-- Populated via JS -->
+          </div>
+        </section>
+
+        <!-- 4. Skill Swap Chains View (Signature Feature) -->
+        <section id="view-chains" class="view-section">
+          <div class="page-header">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h1 class="page-title">Skill Swap Chains</h1>
+                <span class="nav-badge" style="background: #ECFDF5; color: #065F46; border-color: #A7F3D0; font-size: 0.75rem;">Signature Feature</span>
+              </div>
+              <p class="page-subtitle">
+                Automated directed graph cycle detection discovering 3+ student closed-loop knowledge exchanges.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="discoverChainsBtn" onclick="window.app.loadSwapChains()">
+              🔄 Discover Chains
+            </button>
+          </div>
+
+          <div class="chain-container" id="chainVisualizerContainer">
+            <!-- Rendered by ChainsVisualizer -->
+          </div>
+        </section>
+
+        <!-- 5. Sessions View -->
+        <section id="view-sessions" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Session Planner & History</h1>
+              <p class="page-subtitle">Manage upcoming swaps, review completed exchanges, and collaborate on shared notes.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" onclick="window.app.loadSessions('')">All</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.app.loadSessions('pending')">Pending</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.app.loadSessions('accepted')">Accepted</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.app.loadSessions('completed')">Completed</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div id="sessionsListContainer" class="session-list">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. Shared Notes View -->
+        <section id="view-notes" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Shared Study Notes</h1>
+              <p class="page-subtitle">Collaborative knowledge artifacts, learning outcomes, and next action items from sessions.</p>
+            </div>
+          </div>
+
+          <div id="allNotesContainer">
+            <!-- Populated via JS -->
+          </div>
+        </section>
+
+        <!-- 7. Learning Roadmaps View -->
+        <section id="view-roadmaps" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Learning Roadmaps</h1>
+              <p class="page-subtitle">Goal-driven structured learning pathways mapped to campus student mentors.</p>
+            </div>
+          </div>
+
+          <div id="roadmapsContainer">
+            <!-- Populated via JS -->
+          </div>
+        </section>
+
+        <!-- 8. Campus Skill Heatmap View -->
+        <section id="view-heatmap" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Campus Skill Heatmap</h1>
+              <p class="page-subtitle">Real-time supply vs demand analytics highlighting critical mentorship shortages.</p>
+            </div>
+          </div>
+
+          <!-- Main Heatmap Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title"><span>📊</span> Skill Supply vs Demand Distribution</h3>
+            </div>
+            <div style="height: 380px; position: relative;">
+              <canvas id="heatmapMainChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Ranked Shortage Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title"><span>🔥</span> Ranked Campus Skill Shortages</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border-subtle); color: #64748B; font-size: 0.75rem; text-transform: uppercase;">
+                    <th style="padding: 12px;">Skill Name</th>
+                    <th style="padding: 12px;">Category</th>
+                    <th style="padding: 12px;">Mentors Offering</th>
+                    <th style="padding: 12px;">Students Seeking</th>
+                    <th style="padding: 12px;">Net Gap</th>
+                    <th style="padding: 12px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="heatmapTableBody">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. Achievements & Gamification View -->
+        <section id="view-achievements" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Achievements & XP</h1>
+              <p class="page-subtitle">Earn recognition, level up from 1 to 5, and maintain your campus mentor streak.</p>
+            </div>
+          </div>
+
+          <!-- Level & XP Progress Card -->
+          <div class="card" style="background: #FFFFFF; border: 1px solid #DDD6FE; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+              <div>
+                <span style="font-size: 0.78rem; text-transform: uppercase; color: #7C3AED; font-weight: 700;">Player Rank</span>
+                <h2 style="font-size: 2rem; color: #0F172A; font-weight: 800;">Level <span id="achieveLevelNumber">1</span> Scholar</h2>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 1.5rem; font-weight: 800; color: #059669;" id="achieveCurrentXP">0 XP</div>
+                <div style="font-size: 0.8rem; color: #64748B; font-weight: 500;">Goal: <span id="achieveNextLevelXP">150 XP</span></div>
+              </div>
+            </div>
+
+            <!-- Progress Track -->
+            <div class="progress-track" style="height: 10px; margin-bottom: 12px; background: #E2E8F0;">
+              <div id="achieveProgressBar" class="progress-bar-fill" style="width: 25%;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #475569; font-weight: 500;">
+              <span>Active Weekly Streak: <strong id="achieveStreak" style="color: #D97706;">1 Week</strong></span>
+              <span>Level Thresholds: Lvl 1 (0) → Lvl 2 (150) → Lvl 3 (350) → Lvl 4 (650) → Lvl 5 (1000+)</span>
+            </div>
+          </div>
+
+          <!-- Badges Grid -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title"><span>🎖️</span> Campus Badges</h3>
+            </div>
+            <div class="badges-grid" id="badgesGridContainer">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 10. Learning Report View -->
+        <section id="view-report" class="view-section">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Verified Learning Report</h1>
+              <p class="page-subtitle">Official verified summary of peer teaching, learning hours, ratings, and competencies.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" onclick="window.print()">
+                🖨️ Print / Save as PDF
+              </button>
+              <button class="btn btn-secondary" onclick="window.app.exportReportJSON()">
+                📥 Export JSON
+              </button>
+              <button class="btn btn-secondary" onclick="window.app.exportReportText()">
+                📄 Export Text
+              </button>
+            </div>
+          </div>
+
+          <!-- Official Printable Document Container -->
+          <div class="card" style="border: 1px solid #CBD5E1; padding: 36px; background: #FFFFFF; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid var(--border-subtle); padding-bottom: 20px; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2 style="font-size: 1.6rem; color: #0F172A; font-weight: 800;">SKILLSWAP CAMPUS</h2>
+                <div style="font-size: 0.85rem; color: #7C3AED; font-weight: 700;">Official Student Competency & Mentorship Transcript</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.8rem; color: #64748B;">Generated Date</div>
+                <div id="repGeneratedAt" style="font-weight: 700; color: #0F172A; font-size: 0.85rem;"></div>
+              </div>
+            </div>
+
+            <!-- Student Profile Block -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 18px; border-radius: 10px;">
+              <div>
+                <span style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 600;">Student Name</span>
+                <div id="repStudentName" style="font-size: 1.1rem; font-weight: 700; color: #0F172A;"></div>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 600;">Academic Department</span>
+                <div id="repCourseYear" style="font-size: 0.95rem; font-weight: 600; color: #334155;"></div>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 600;">Average Peer Rating</span>
+                <div id="repRating" style="font-size: 1.1rem; font-weight: 700; color: #D97706;"></div>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 600;">Gamification Rank</span>
+                <div id="repLevel" style="font-size: 1rem; font-weight: 700; color: #059669;"></div>
+              </div>
+            </div>
+
+            <!-- Quantitative Metrics Grid -->
+            <div class="stats-grid" style="margin-bottom: 24px;">
+              <div class="stat-card" style="padding: 16px;">
+                <div class="stat-icon emerald">⏱️</div>
+                <div class="stat-info">
+                  <span class="stat-value" id="repTeachingHours">0h</span>
+                  <span class="stat-label">Teaching Hours Given</span>
+                </div>
+              </div>
+              <div class="stat-card" style="padding: 16px;">
+                <div class="stat-icon blue">📖</div>
+                <div class="stat-info">
+                  <span class="stat-value" id="repLearningHours">0h</span>
+                  <span class="stat-label">Learning Hours Received</span>
+                </div>
+              </div>
+              <div class="stat-card" style="padding: 16px;">
+                <div class="stat-icon purple">🤝</div>
+                <div class="stat-info">
+                  <span class="stat-value" id="repTotalSessions">0</span>
+                  <span class="stat-label">Completed Sessions</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Earned Badges -->
+            <div style="margin-bottom: 24px;">
+              <h4 style="font-size: 0.95rem; color: #0F172A; font-weight: 700; margin-bottom: 8px;">Earned Competency Badges</h4>
+              <div id="repBadgesContainer"></div>
+            </div>
+
+            <!-- Completed Sessions Log -->
+            <div>
+              <h4 style="font-size: 0.95rem; color: #0F172A; font-weight: 700; margin-bottom: 8px;">Verified Session History</h4>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+                  <thead>
+                    <tr style="border-bottom: 2px solid var(--border-subtle); color: #64748B; font-size: 0.75rem; text-transform: uppercase;">
+                      <th style="padding: 10px 12px;">Skill Exchanged</th>
+                      <th style="padding: 10px 12px;">Role</th>
+                      <th style="padding: 10px 12px;">Partner</th>
+                      <th style="padding: 10px 12px;">Date Completed</th>
+                    </tr>
+                  </thead>
+                  <tbody id="repSessionsTable">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- MODALS -->
+
+  <!-- 1. Schedule Session Modal -->
+  <div class="modal-overlay" id="scheduleModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">📅 Schedule Learning Session</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="scheduleSessionForm">
+        <input type="hidden" id="schedPartnerId" />
+
+        <div style="background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+          <div style="font-size: 0.78rem; color: #64748B; font-weight: 600;">Selected Partner</div>
+          <div id="schedPartnerName" style="font-size: 1.1rem; font-weight: 700; color: #0F172A;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Skill to Learn</label>
+          <select id="schedSkillSelect" class="form-select" required></select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="schedDate" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Start Time (24h)</label>
+            <input type="time" id="schedTime" class="form-input" required />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Duration</label>
+            <select id="schedDuration" class="form-select">
+              <option value="45">45 Minutes</option>
+              <option value="60" selected>60 Minutes</option>
+              <option value="90">90 Minutes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Format</label>
+            <select id="schedFormat" class="form-select">
+              <option value="Virtual">Virtual (Online)</option>
+              <option value="In-Person">In-Person (Campus)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location or Meeting Link</label>
+          <input type="text" id="schedLocation" class="form-input" placeholder="e.g. Campus Library Room 302 or Zoom link" value="Campus Library Room 204" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
+          Confirm & Send Request
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Free Slots Modal -->
+  <div class="modal-overlay" id="freeSlotModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">🕒 Free-Slot Finder</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div style="margin-bottom: 14px; font-size: 0.88rem; color: #64748B;">
+        Comparing weekly calendar availability with <strong id="freeSlotPartnerName" style="color: #0F172A;"></strong>:
+      </div>
+      <div id="freeSlotModalContent"></div>
+    </div>
+  </div>
+
+  <!-- 3. Shared Notes Modal -->
+  <div class="modal-overlay" id="notesModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">📝 Shared Session Notes</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="sharedNotesForm">
+        <input type="hidden" id="notesSessionId" />
+        <div style="color: #7C3AED; font-weight: 700; font-size: 1rem; margin-bottom: 14px;" id="notesSkillName"></div>
+
+        <div class="form-group">
+          <label class="form-label">Topics Covered</label>
+          <textarea id="noteTopics" class="form-textarea" placeholder="Key topics and concepts explored during the session..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Learning Outcomes</label>
+          <textarea id="noteOutcomes" class="form-textarea" placeholder="What practical capabilities did the learner demonstrate?"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Next Steps / Action Items</label>
+          <textarea id="noteNextSteps" class="form-textarea" placeholder="Exercises, reading materials, or projects to practice next..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          Save Shared Notes
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Rating Modal -->
+  <div class="modal-overlay" id="ratingModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⭐ Rate Learning Session</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="submitRatingForm">
+        <input type="hidden" id="rateSessionId" />
+        <p style="color: #334155; font-size: 0.9rem; margin-bottom: 16px;">
+          How was your experience learning with <strong id="ratePartnerName" style="color: #0F172A;"></strong>?
+        </p>
+
+        <div class="form-group" style="align-items: center; text-align: center; margin-bottom: 20px;">
+          <label class="form-label">Select Star Rating</label>
+          <div class="star-rating-select" id="starRatingSelector">
+            <span data-star="1" class="selected">★</span>
+            <span data-star="2" class="selected">★</span>
+            <span data-star="3" class="selected">★</span>
+            <span data-star="4" class="selected">★</span>
+            <span data-star="5" class="selected">★</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Feedback / Review Comment</label>
+          <textarea id="rateComment" class="form-textarea" placeholder="Share specific highlights about their teaching or communication..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Submit Rating (+25 XP to Mentor)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Teach-Back Modal -->
+  <div class="modal-overlay" id="teachBackModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">💡 Teach-Back & Verification</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      
+      <!-- Learner Section -->
+      <div id="tbLearnerSection">
+        <form id="teachBackForm">
+          <input type="hidden" id="tbSessionId" />
+          <p style="font-size: 0.88rem; color: #334155; margin-bottom: 12px; line-height: 1.5;">
+            Summarize 2 or 3 essential takeaways you mastered during your session with <strong id="tbPartnerName" style="color: #0F172A;"></strong>. Once your mentor confirms, you'll earn the <strong>Verified Scholar</strong> badge!
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Key Takeaways (Demonstrate your understanding)</label>
+            <textarea id="tbTakeawaysInput" class="form-textarea" style="min-height: 120px;" placeholder="1. I learned that...&#10;2. The difference between...&#10;3. When building this, always..." required></textarea>
+          </div>
+
+          <div id="tbStatusText" style="font-size: 0.8rem; color: #7C3AED; margin-bottom: 12px; font-weight: 600;"></div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Submit Takeaways for Review
+          </button>
+        </form>
+      </div>
+
+      <!-- Mentor Section -->
+      <div id="tbMentorSection" style="display: none;">
+        <p style="font-size: 0.88rem; color: #334155; margin-bottom: 12px; line-height: 1.5;">
+          Review the key takeaways submitted by your student. Confirming will verify their competency and award them the Verified Scholar badge!
+        </p>
+
+        <div style="background: #F8FAFC; padding: 14px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 16px;">
+          <div style="font-size: 0.75rem; color: #0284C7; font-weight: 700; text-transform: uppercase;">Learner's Submitted Takeaways</div>
+          <div id="tbSubmittedTakeaways" style="font-size: 0.9rem; color: #0F172A; margin-top: 6px; white-space: pre-line; line-height: 1.5;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mentor Feedback / Endorsement</label>
+          <textarea id="tbMentorFeedback" class="form-textarea" placeholder="Great job! You grasped the core concept well..."></textarea>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="tbConfirmBtn" style="width: 100%;" onclick="window.app.confirmTeachBackMentor()">
+          Verify Takeaways & Award Badge
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 6. Edit Profile Modal -->
+  <div class="modal-overlay" id="editProfileModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ Edit Student Profile</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="editProfileForm">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="editProfileName" class="form-input" required />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">Major / Course</label>
+            <input type="text" id="editProfileCourse" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Year of Study</label>
+            <input type="text" id="editProfileYear" class="form-input" placeholder="e.g. 3rd Year" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Bio & Interests</label>
+          <textarea id="editProfileBio" class="form-textarea" rows="3"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          Save Profile Changes
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/chains_visualizer.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
