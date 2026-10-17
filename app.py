@@ -8,10 +8,28 @@ from algorithms.chains import find_skill_swap_chains
 from seed_data import seed_database
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///skillswap.db'
+
+# Support Vercel serverless environment (writable /tmp directory)
+IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV') is not None
+if IS_VERCEL:
+    db_file = '/tmp/skillswap.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_file}'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///skillswap.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+# Ensure database tables and deterministic demo data exist on startup/cold-start
+with app.app_context():
+    db.create_all()
+    if Student.query.count() == 0:
+        try:
+            seed_database()
+        except Exception as err:
+            print("Auto-seed error on startup:", err)
+
 
 # Helper function to check and award badges
 def check_and_award_badges(student_id):
