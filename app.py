@@ -18,6 +18,7 @@ import io
 # ─── App & DB config ───────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
+application = app
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'skillswap-secret-2024-campus')
 
 if os.environ.get('VERCEL'):
