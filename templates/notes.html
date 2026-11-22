@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Session Notes — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:16px;">
+  <a href="/sessions" class="btn btn-ghost btn-sm">← Back to Sessions</a>
+</div>
+
+<!-- Session Info Header -->
+<div class="card mb-4" style="background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.3);">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="font-size:36px;">
+      {% if session.skill.category == 'Programming' %}💻
+      {% elif session.skill.category == 'Design' %}🎨
+      {% elif session.skill.category == 'Data Science' %}📊
+      {% elif session.skill.category == 'Communication' %}🗣
+      {% else %}⚡{% endif %}
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:20px;font-weight:800;color:var(--text-primary);">{{ session.skill.name }}</div>
+      <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">
+        <strong>{{ session.teacher.name }}</strong> teaching <strong>{{ session.learner.name }}</strong>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;">
+        <span>📆 {{ session.date }}</span>
+        <span>🕐 {{ session.start_time }}</span>
+        <span>⏱ {{ session.duration_minutes }} min</span>
+        <span>{{ '🌐' if session.format == 'Online' else '🏫' }} {{ session.format }}</span>
+      </div>
+    </div>
+    <span class="status-pill tag-{{ session.status }}">{{ session.status.upper() }}</span>
+  </div>
+</div>
+
+<div class="cards-grid-2">
+  <!-- Notes Section -->
+  <div>
+    <div class="section-heading">📝 Session Notes</div>
+    <div class="card">
+      {% if session.status == 'completed' or session.teacher_id == current_student.id or session.learner_id == current_student.id %}
+      <form method="POST" action="/sessions/{{ session.id }}/notes">
+        <div class="form-group">
+          <label class="form-label">Topics Covered / Key Learnings / Next Steps</label>
+          <textarea class="form-control" name="notes" rows="8"
+                    placeholder="What did you cover in this session? What were the key learnings? What are the next steps?">{{ session.notes or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Save Notes</button>
+      </form>
+      {% else %}
+      <div class="text-muted text-sm">Notes will be available after the session starts.</div>
+      {% endif %}
+
+      {% if session.notes %}
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:600;color:var(--accent-cyan);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Saved Notes</div>
+        <div style="font-size:14px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;">{{ session.notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Takeaway Section -->
+  <div>
+    <div class="section-heading">🎯 Learning Takeaway</div>
+
+    {% if session.status == 'completed' and session.learner_id == current_student.id %}
+    <!-- Learner submits takeaway -->
+    {% if existing_takeaway %}
+    <div class="card mb-3" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);">
+      <div style="font-size:12px;font-weight:600;color:var(--accent-green);margin-bottom:6px;">
+        ✅ Your Takeaway {% if existing_takeaway.confirmed %}(Confirmed by teacher!){% else %}(Awaiting teacher confirmation){% endif %}
+      </div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">{{ existing_takeaway.content }}</div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">
+        What's your key takeaway from this session? Share what you learned and your next steps. <strong style="color:var(--accent-cyan);">+25 XP</strong>
+      </div>
+      <form method="POST" action="/sessions/{{ session.id }}/takeaway">
+        <div class="form-group">
+          <label class="form-label">Your Takeaway</label>
+          <textarea class="form-control" name="content" rows="5"
+                    placeholder="e.g. I learned list comprehensions and how to write Pythonic code. Next step: build a Flask project.">{{ existing_takeaway.content if existing_takeaway else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Submit Takeaway (+25 XP)</button>
+      </form>
+    </div>
+
+    {% elif session.status == 'completed' and session.teacher_id == current_student.id %}
+    <!-- Teacher confirms takeaway -->
+    <div class="card">
+      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">
+        Review your learner's takeaway and confirm it's accurate.
+      </div>
+      {% for takeaway in session.takeaways %}
+      <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="avatar avatar-sm" style="background:{{ takeaway.learner.avatar_color }}">{{ takeaway.learner.initials() }}</div>
+          <strong style="font-size:13px;">{{ takeaway.learner.name }}</strong>
+          {% if takeaway.confirmed %}<span class="skill-tag tag-offer">✓ Confirmed</span>{% endif %}
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">{{ takeaway.content }}</div>
+        {% if not takeaway.confirmed %}
+        <form method="POST" action="/takeaway/{{ takeaway.id }}/confirm" style="margin-top:10px;">
+          <button type="submit" class="btn btn-success btn-sm">✓ Confirm this Takeaway</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% if not session.takeaways %}
+      <div class="text-muted text-sm">The learner hasn't submitted a takeaway yet.</div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <div class="card" style="opacity:0.7;">
+      <div class="text-muted text-sm">Takeaways can be submitted after the session is completed.</div>
+    </div>
+    {% endif %}
+
+    <!-- Participant Info -->
+    <div class="card mt-3">
+      <div class="card-title mb-3">👥 Participants</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="avatar avatar-sm" style="background:{{ session.teacher.avatar_color }}">{{ session.teacher.initials() }}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">{{ session.teacher.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Teacher · {{ session.teacher.course }}</div>
+          </div>
+          <a href="/profile/{{ session.teacher.id }}" class="btn btn-ghost btn-sm" style="margin-left:auto;">Profile</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="avatar avatar-sm" style="background:{{ session.learner.avatar_color }}">{{ session.learner.initials() }}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">{{ session.learner.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Learner · {{ session.learner.course }}</div>
+          </div>
+          <a href="/profile/{{ session.learner.id }}" class="btn btn-ghost btn-sm" style="margin-left:auto;">Profile</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

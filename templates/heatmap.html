@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Skill Heatmap — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🔥 Skill Heatmap</h1>
+  <div class="page-subtitle">See which skills are in demand vs. oversupplied across the campus</div>
+</div>
+
+<!-- Legend -->
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div style="width:14px;height:14px;border-radius:3px;background:rgba(16,185,129,0.6);"></div>
+    <span style="font-size:13px;color:var(--text-secondary);">Students Offering</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div style="width:14px;height:14px;border-radius:3px;background:rgba(239,68,68,0.5);"></div>
+    <span style="font-size:13px;color:var(--text-secondary);">Students Wanting</span>
+  </div>
+  <div style="margin-left:auto;font-size:13px;color:var(--text-muted);">
+    Data from {{ all_students|length }} students · Live from database
+  </div>
+</div>
+
+<!-- Heatmap Chart -->
+<div class="chart-container mb-4" style="padding:20px;">
+  <div class="card-header mb-3">
+    <div class="card-title">📊 Skill Supply vs. Demand</div>
+  </div>
+  <div style="height:420px;position:relative;">
+    <canvas id="heatmapChart"></canvas>
+  </div>
+</div>
+
+<!-- Skill Gap Analysis -->
+<div class="cards-grid-2">
+  <!-- Gap List -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">⚠️ Skill Gap Analysis</div>
+      <span style="font-size:11px;color:var(--text-muted);">Sorted by demand surplus</span>
+    </div>
+    <div id="gapList" style="max-height:400px;overflow-y:auto;">
+      <div class="text-muted text-sm">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">💡 Campus Insights</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-md);padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent-red);margin-bottom:4px;">🔴 High Demand Skills</div>
+        <div style="font-size:13px;color:var(--text-secondary);">
+          These skills have more students wanting to learn them than people offering to teach — great opportunities for expert students to step up as mentors.
+        </div>
+      </div>
+      <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:var(--radius-md);padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent-green);margin-bottom:4px;">🟢 Well Supplied Skills</div>
+        <div style="font-size:13px;color:var(--text-secondary);">
+          These skills have enough or more teachers than learners — good news for students wanting to learn them!
+        </div>
+      </div>
+      <div style="background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent-purple);margin-bottom:4px;">📈 Trending</div>
+        <div style="font-size:13px;color:var(--text-secondary);">
+          Python, Machine Learning, and UI Design are consistently the most-wanted skills on campus this semester.
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <a href="/find-partners" class="btn btn-primary btn-sm">Find a Mentor for In-Demand Skills →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

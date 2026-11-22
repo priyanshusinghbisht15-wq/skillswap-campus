@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Find Partners — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🤝 Find Partners</h1>
+  <div class="page-subtitle">Discover students to learn from and teach — scored by skill compatibility, availability & ratings</div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4" style="padding:16px 20px;">
+  <form method="GET" action="/find-partners" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <label class="form-label">🔍 Search Partners</label>
+      <input type="text" id="partner_search" class="form-control" placeholder="Search by name or skill..." value="">
+    </div>
+    <div style="min-width:160px;">
+      <label class="form-label">Filter by Skill They Offer</label>
+      <select class="form-select" name="skill_filter">
+        <option value="">All Skills</option>
+        {% for sk in all_skills %}
+        <option value="{{ sk.name }}" {% if skill_filter == sk.name %}selected{% endif %}>{{ sk.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Apply Filters</button>
+    {% if skill_filter %}
+    <a href="/find-partners" class="btn btn-ghost">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Results Count -->
+<div style="margin-bottom:16px;color:var(--text-secondary);font-size:13px;">
+  Found <strong style="color:var(--text-primary);">{{ matches|length }}</strong> potential partners
+  {% if skill_filter %}filtered by <strong style="color:var(--accent-cyan);">{{ skill_filter }}</strong>{% endif %}
+</div>
+
+<!-- Partner Cards -->
+<div class="cards-grid">
+  {% for item in matches %}
+  {% set partner = item.student %}
+  {% set score   = item.score %}
+  <div class="partner-card-wrap">
+    <div class="partner-card" data-name="{{ partner.name }}" data-skills="{% for ss in partner.skills %}{{ ss.skill.name }} {% endfor %}">
+
+      <!-- Top: Avatar + Name + Score -->
+      <div class="partner-top">
+        <a href="/profile/{{ partner.id }}">
+          <div class="avatar avatar-md" style="background:{{ partner.avatar_color }}">{{ partner.initials() }}</div>
+        </a>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;">
+            <a href="/profile/{{ partner.id }}" style="color:var(--text-primary);text-decoration:none;">{{ partner.name }}</a>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ partner.course }} · Year {{ partner.year }}</div>
+          <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+            {% for badge in partner.badges[:2] %}
+            {% set info = BADGE_INFO.get(badge.badge_type, {}) %}
+            <span data-tooltip="{{ info.get('label','') }}" style="font-size:14px;">{{ info.get('icon','🏅') }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="match-score-badge {% if score.total >= 70 %}score-high{% elif score.total >= 45 %}score-mid{% else %}score-low{% endif %}"
+             data-tooltip="Match Score">
+          {{ score.total }}%
+        </div>
+      </div>
+
+      <!-- Skills They Offer You Want -->
+      {% if score.b_teaches_a %}
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--accent-green);margin-bottom:4px;">📖 Can Teach You</div>
+        <div class="skill-tags">
+          {% for sk in score.b_teaches_a %}
+          <span class="skill-tag tag-offer">{{ sk }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Skills You Offer That They Want -->
+      {% if score.a_teaches_b %}
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--accent-blue);margin-bottom:4px;">✏ You Can Teach</div>
+        <div class="skill-tags">
+          {% for sk in score.a_teaches_b %}
+          <span class="skill-tag tag-want">{{ sk }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Reasons -->
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        {% for reason in score.reasons %}
+        <div style="font-size:11px;color:var(--text-muted);">• {{ reason }}</div>
+        {% endfor %}
+      </div>
+
+      <!-- Score Breakdown Toggle -->
+      <button class="breakdown-toggle btn btn-ghost btn-sm"
+              onclick="toggleBreakdown('bd_{{ partner.id }}')">▼ Show Score Details</button>
+      <div id="bd_{{ partner.id }}" class="score-breakdown">
+        {% for comp, label, weight in [('skill','Skill Compatibility','50%'),('level','Level Match','20%'),('availability','Shared Availability','20%'),('rating','Partner Rating','10%')] %}
+        <div class="score-row">
+          <span class="score-label">{{ label }} <span style="color:var(--text-muted);font-size:10px;">({{ weight }})</span></span>
+          <div class="score-bar-wrap"><div class="score-bar-fill" data-width="{{ score[comp] }}%" style="width:{{ score[comp] }}%;"></div></div>
+          <span class="score-pct">{{ score[comp] }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Availability Check -->
+      <button class="btn btn-ghost btn-sm"
+              onclick="checkAvailability({{ current_student.id }}, {{ partner.id }}, 'avail_{{ partner.id }}')">
+        🗓 Check Shared Slots
+      </button>
+      <div id="avail_{{ partner.id }}"></div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+        <a href="/profile/{{ partner.id }}" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;">View Profile</a>
+        <button class="btn btn-primary btn-sm" style="flex:1;"
+                onclick="openSessionModal({{ partner.id }}, '{{ partner.name }}')">Schedule Session</button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not matches %}
+  <div class="empty-state" style="grid-column:1/-1;">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">No partners found</div>
+    <div class="empty-desc">Try clearing filters or adding more skills to your profile.</div>
+    <a href="/profile/{{ current_student.id }}/edit" class="btn btn-primary mt-3">Update My Skills</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Quick Session Modal -->
+<div class="modal-overlay" id="sessionModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📅 Schedule a Session</div>
+      <button class="modal-close" onclick="closeModal('sessionModal')">✕</button>
+    </div>
+    <form method="POST" action="/sessions/create">
+      <input type="hidden" name="partner_id" id="modal_partner_id">
+      <div class="form-group">
+        <label class="form-label">Partner</label>
+        <input type="text" class="form-control" id="modal_partner_name" readonly style="opacity:0.7;">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Your Role</label>
+          <select class="form-select" name="role">
+            <option value="learner">I am the Learner</option>
+            <option value="teacher">I am the Teacher</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Skill</label>
+          <select class="form-select" name="skill_id" id="skill_select">
+            <option value="">— select partner first —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-control" name="date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input type="time" class="form-control" name="start_time" value="14:00" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <select class="form-select" name="duration">
+            <option value="30">30 min</option>
+            <option value="60" selected>60 min</option>
+            <option value="90">90 min</option>
+            <option value="120">2 hours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Format</label>
+          <select class="form-select" name="format">
+            <option value="Online">Online</option>
+            <option value="In-Person">In-Person</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Send Request</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('sessionModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openSessionModal(partnerId, partnerName) {
+  document.getElementById('modal_partner_id').value = partnerId;
+  document.getElementById('modal_partner_name').value = partnerName;
+  // trigger skill load
+  const event = new Event('change');
+  const sel = document.getElementById('partner_select');
+  // directly fetch skills
+  fetch(`/api/partner-skills/${partnerId}`)
+    .then(r => r.json())
+    .then(data => {
+      const skillSel = document.getElementById('skill_select');
+      skillSel.innerHTML = '<option value="">— select skill —</option>' +
+        data.map(s => `<option value="${s.id}">${s.name} (${s.proficiency})</option>`).join('');
+    });
+  openModal('sessionModal');
+}
+</script>
+{% endblock %}

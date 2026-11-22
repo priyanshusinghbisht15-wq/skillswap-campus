@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SkillSwap Campus{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <div class="logo-name">SkillSwap</div>
+          <div class="logo-sub">Campus</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-link" href="/">
+        <i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard
+      </a>
+      <a class="nav-link" href="/profile/{{ current_student.id if current_student else 1 }}">
+        <i data-lucide="user" class="nav-icon"></i> My Profile
+      </a>
+      <a class="nav-link" href="/find-partners">
+        <i data-lucide="users" class="nav-icon"></i> Find Partners
+      </a>
+
+      <div class="nav-section-label" style="margin-top:8px;">Learning</div>
+      <a class="nav-link" href="/chains">
+        <i data-lucide="git-fork" class="nav-icon"></i> Skill Chains
+      </a>
+      <a class="nav-link" href="/sessions">
+        <i data-lucide="calendar" class="nav-icon"></i> Sessions
+      </a>
+      <a class="nav-link" href="/call">
+        <i data-lucide="video" class="nav-icon"></i> Video Study Room
+      </a>
+      <a class="nav-link" href="/roadmaps">
+        <i data-lucide="map" class="nav-icon"></i> Roadmaps
+      </a>
+
+      <div class="nav-section-label" style="margin-top:8px;">Insights</div>
+      <a class="nav-link" href="/heatmap">
+        <i data-lucide="bar-chart-2" class="nav-icon"></i> Skill Heatmap
+      </a>
+      <a class="nav-link" href="/achievements">
+        <i data-lucide="award" class="nav-icon"></i> Achievements
+      </a>
+      <a class="nav-link" href="/report/{{ current_student.id if current_student else 1 }}">
+        <i data-lucide="file-text" class="nav-icon"></i> My Report
+      </a>
+      <div class="nav-section-label" style="margin-top:8px;">Account</div>
+      {% if is_logged_in and current_student %}
+      <a class="nav-link" href="/profile/{{ current_student.id }}">
+        <i data-lucide="user" class="nav-icon"></i> My Profile
+      </a>
+      <a class="nav-link" href="/logout">
+        <i data-lucide="log-out" class="nav-icon"></i> Sign Out
+      </a>
+      {% else %}
+      <a class="nav-link" href="/login">
+        <i data-lucide="log-in" class="nav-icon"></i> Sign In
+      </a>
+      <a class="nav-link" href="/register">
+        <i data-lucide="user-plus" class="nav-icon"></i> Register
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="student-switcher-label">Switch Student (Demo)</div>
+      {% for s in all_students %}
+      <a class="student-btn {% if s.id == current_student.id %}active{% endif %}"
+         href="/switch/{{ s.id }}">
+        <div class="avatar avatar-sm" style="background:{{ s.avatar_color }}">{{ s.initials() }}</div>
+        <span>{{ s.name.split()[0] }}</span>
+        {% if s.id == current_student.id %}
+        <span style="margin-left:auto;font-size:10px;color:var(--accent-cyan);">you</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <!-- ── MAIN WRAPPER ── -->
+  <div class="main-wrapper">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-center">
+        <span class="tagline">Your skills are someone else's next breakthrough.</span>
+      </div>
+      <div class="topbar-right">
+        <a href="/call" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:6px;">
+          <i data-lucide="video" style="width:14px;height:14px;color:var(--accent-cyan);"></i> Video Call
+        </a>
+        <span class="demo-badge">📊 Demo Mode</span>
+        {% if is_logged_in and current_student %}
+        <div class="current-user-pill">
+          <div class="avatar avatar-sm" style="background:{{ current_student.avatar_color }}">{{ current_student.initials() }}</div>
+          <span>{{ current_student.name.split()[0] }}</span>
+          <span style="font-size:10px;color:var(--text-muted);">Lv.{{ current_student.level }}</span>
+        </div>
+        <a href="/logout" class="btn btn-ghost btn-sm" title="Log Out" style="padding:6px 10px;">
+          <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+        </a>
+        {% else %}
+        <a href="/login" class="btn btn-primary btn-sm">Sign In</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">
+        {% if category == 'success' %}✓{% elif category == 'error' %}✕{% elif category == 'info' %}ℹ{% endif %}
+        {{ message }}
+      </div>
+      {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div><!-- /main-wrapper -->
+</div><!-- /app-layout -->
+
+<script src="/static/main.js"></script>
+<script>lucide.createIcons();</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

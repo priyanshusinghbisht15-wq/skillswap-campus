@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Sessions — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1>📅 Sessions</h1>
+    <div class="page-subtitle">Manage your teaching and learning sessions</div>
+  </div>
+  <button class="btn btn-primary" onclick="openModal('createModal')">
+    <i data-lucide="plus" style="width:15px;height:15px;"></i> New Session
+  </button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <a href="/sessions?tab=upcoming" class="tab {% if tab == 'upcoming' %}active{% endif %}">⏳ Upcoming</a>
+  <a href="/sessions?tab=past"     class="tab {% if tab == 'past'     %}active{% endif %}">✅ Past</a>
+  <a href="/sessions?tab=all"      class="tab {% if tab == 'all'      %}active{% endif %}">📋 All</a>
+</div>
+
+<!-- Sessions List -->
+{% if sessions %}
+  {% for s in sessions %}
+  <div class="session-card">
+    <div class="session-icon">
+      {% if s.skill.category == 'Programming' %}💻
+      {% elif s.skill.category == 'Design' %}🎨
+      {% elif s.skill.category == 'Data Science' %}📊
+      {% elif s.skill.category == 'Communication' %}🗣
+      {% elif s.skill.category == 'Creative' %}📸
+      {% elif s.skill.category == 'Business' %}📈
+      {% else %}⚡{% endif %}
+    </div>
+
+    <div class="session-info">
+      <div class="session-title">
+        {{ s.skill.name }}
+        <span class="status-pill tag-{{ s.status }}" style="margin-left:6px;">{{ s.status.upper() }}</span>
+      </div>
+      <div class="session-meta">
+        {% if s.teacher_id == current_student.id %}
+        <span>🎓 Teaching <strong>{{ s.learner.name }}</strong></span>
+        {% else %}
+        <span>📖 Learning from <strong>{{ s.teacher.name }}</strong></span>
+        {% endif %}
+        <span>📆 {{ s.date }}</span>
+        <span>🕐 {{ s.start_time }}</span>
+        <span>⏱ {{ s.duration_minutes }}min</span>
+        <span>{{ '🌐' if s.format == 'Online' else '🏫' }} {{ s.format }}</span>
+      </div>
+    </div>
+
+    <div class="session-actions">
+      <!-- Video Call button (for Online sessions) -->
+      {% if s.format == 'Online' and s.status in ['accepted', 'completed'] %}
+      <a href="/sessions/{{ s.id }}/call" class="btn btn-primary btn-sm" title="Join Video Call" style="box-shadow:0 0 10px rgba(124,58,237,0.5);">
+        <i data-lucide="video" style="width:13px;height:13px;"></i> Call
+      </a>
+      {% endif %}
+
+      <!-- View Notes -->
+      <a href="/sessions/{{ s.id }}/notes" class="btn btn-ghost btn-sm" data-tooltip="Notes">
+        <i data-lucide="file-text" style="width:13px;height:13px;"></i>
+      </a>
+
+      <!-- Accept (if pending and current is teacher) -->
+      {% if s.status == 'pending' and s.teacher_id == current_student.id %}
+      <form method="POST" action="/sessions/{{ s.id }}/accept" style="display:inline;">
+        <button type="submit" class="btn btn-success btn-sm">✓ Accept</button>
+      </form>
+      {% endif %}
+
+      <!-- Complete (if accepted) -->
+      {% if s.status == 'accepted' and (s.teacher_id == current_student.id or s.learner_id == current_student.id) %}
+      <form method="POST" action="/sessions/{{ s.id }}/complete" style="display:inline;"
+            onsubmit="return confirm('Mark this session as completed?')">
+        <button type="submit" class="btn btn-success btn-sm">✅ Complete</button>
+      </form>
+      {% endif %}
+
+      <!-- Rate (if completed and not yet rated) -->
+      {% if s.status == 'completed' and s.id not in rated_session_ids %}
+      <button class="btn btn-primary btn-sm" onclick="openRateModal({{ s.id }})">⭐ Rate</button>
+      {% endif %}
+
+      <!-- Cancel -->
+      {% if s.status in ['pending','accepted'] %}
+      <form method="POST" action="/sessions/{{ s.id }}/cancel" style="display:inline;"
+            onsubmit="return confirm('Cancel this session?')">
+        <button type="submit" class="btn btn-danger btn-sm">✕</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📅</div>
+  <div class="empty-title">No {{ tab }} sessions</div>
+  <div class="empty-desc">
+    {% if tab == 'upcoming' %}Schedule a session with a partner to get started.
+    {% elif tab == 'past' %}Complete some sessions to see them here.
+    {% else %}No sessions yet. Find a partner and schedule one!{% endif %}
+  </div>
+  <button class="btn btn-primary mt-3" onclick="openModal('createModal')">+ New Session</button>
+</div>
+{% endif %}
+
+<!-- ── CREATE SESSION MODAL ── -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📅 Schedule New Session</div>
+      <button class="modal-close" onclick="closeModal('createModal')">✕</button>
+    </div>
+    <form method="POST" action="/sessions/create">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Partner</label>
+          <select class="form-select" name="partner_id" id="partner_select" required>
+            <option value="">— select partner —</option>
+            {% for s in all_students %}
+            <option value="{{ s.id }}">{{ s.name }} ({{ s.course.split()[0] }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Role</label>
+          <select class="form-select" name="role">
+            <option value="learner">I'm Learning</option>
+            <option value="teacher">I'm Teaching</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Skill</label>
+        <select class="form-select" name="skill_id" id="skill_select" required>
+          <option value="">— select partner first —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-control" name="date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <input type="time" class="form-control" name="start_time" value="14:00" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <select class="form-select" name="duration">
+            <option value="30">30 min</option>
+            <option value="60" selected>60 min</option>
+            <option value="90">90 min</option>
+            <option value="120">2 hours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Format</label>
+          <select class="form-select" name="format">
+            <option value="Online">🌐 Online</option>
+            <option value="In-Person">🏫 In-Person</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Send Session Request</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── RATE SESSION MODAL ── -->
+<div class="modal-overlay" id="rateModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">⭐ Rate Session</div>
+      <button class="modal-close" onclick="closeModal('rateModal')">✕</button>
+    </div>
+    <form method="POST" id="rateForm">
+      <div class="form-group" style="text-align:center;">
+        <label class="form-label">Your Rating</label>
+        <div class="star-rating-interactive" style="justify-content:center;font-size:32px;gap:8px;">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <input type="hidden" name="stars" value="5">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comment (optional)</label>
+        <textarea class="form-control" name="comment" rows="3" placeholder="What made this session great?"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Submit Rating</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('rateModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openRateModal(sessionId) {
+  document.getElementById('rateForm').action = `/sessions/${sessionId}/rate`;
+  // set default 5 stars visually
+  document.querySelectorAll('#rateModal .star').forEach(s => s.classList.add('filled'));
+  openModal('rateModal');
+}
+</script>
+{% endblock %}

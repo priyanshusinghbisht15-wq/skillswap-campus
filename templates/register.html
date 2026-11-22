@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Create Account — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="max-width:680px;">
+  <div class="auth-card" style="max-width:100%;">
+    <div class="auth-header">
+      <div class="auth-logo-badge">🎓</div>
+      <h1 class="auth-title">Create Student Profile</h1>
+      <p class="auth-subtitle">Teach what you know. Learn what you desire.</p>
+    </div>
+
+    <form method="POST" action="/register" class="auth-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Alex Rivera" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Campus Email *</label>
+          <input type="email" name="email" class="form-control" placeholder="alex@campus.edu" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Password * (min 6 chars)</label>
+          <input type="password" name="password" class="form-control" placeholder="Create password" minlength="6" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password *</label>
+          <input type="password" name="confirm_password" class="form-control" placeholder="Re-enter password" minlength="6" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Course / Major *</label>
+          <select name="course" class="form-select" required>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Design & UX">Design & UX</option>
+            <option value="Data Science & AI">Data Science & AI</option>
+            <option value="Business & Finance">Business & Finance</option>
+            <option value="Communications">Communications</option>
+            <option value="Electrical Engineering">Electrical Engineering</option>
+            <option value="Mechanical Engineering">Mechanical Engineering</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year of Study *</label>
+          <select name="year" class="form-select" required>
+            <option value="1">1st Year (Freshman)</option>
+            <option value="2" selected>2nd Year (Sophomore)</option>
+            <option value="3">3rd Year (Junior)</option>
+            <option value="4">4th Year (Senior)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Short Bio / What Inspires You</label>
+        <textarea name="bio" class="form-control" rows="2" placeholder="Tell other students about your interests, projects, or learning goals..."></textarea>
+      </div>
+
+      <div class="section-divider-title">
+        <span>YOUR SKILLS EXCHANGE SETUP</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Skill You Can Teach</label>
+          <select name="offer_skill_id" class="form-select">
+            <option value="">— Select a skill to teach —</option>
+            {% for sk in all_skills %}
+            <option value="{{ sk.id }}">{{ sk.name }} ({{ sk.category }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Proficiency Level</label>
+          <select name="offer_proficiency" class="form-select">
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced" selected>Advanced</option>
+            <option value="Beginner">Beginner</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Skill You Want to Learn</label>
+        <select name="want_skill_id" class="form-select">
+          <option value="">— Select a skill you want —</option>
+          {% for sk in all_skills %}
+          <option value="{{ sk.id }}">{{ sk.name }} ({{ sk.category }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:16px;">
+        Complete Registration & Start Swapping
+      </button>
+
+      <div class="auth-footer-text">
+        Already have an account? <a href="/login" class="auth-link">Sign In here →</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} — Profile{% endblock %}
+
+{% block content %}
+<!-- Profile Header -->
+<div class="profile-header">
+  <div class="avatar avatar-xl avatar-ring" style="background:{{ student.avatar_color }}">{{ student.initials() }}</div>
+  <div class="profile-info">
+    <div class="profile-name">{{ student.name }}</div>
+    <div class="profile-course">{{ student.course }} · Year {{ student.year }}</div>
+    <div class="profile-bio">{{ student.bio or 'No bio yet.' }}</div>
+    <div style="display:flex;gap:16px;margin-top:14px;flex-wrap:wrap;">
+      <div class="hero-stat">
+        <span class="hero-stat-value">{{ student.xp }}</span>
+        <span class="hero-stat-label">XP</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-value">Lv.{{ student.level }}</span>
+        <span class="hero-stat-label">Level</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-value">{{ sessions_taught }}</span>
+        <span class="hero-stat-label">Taught</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-value">{{ sessions_learned }}</span>
+        <span class="hero-stat-label">Learned</span>
+      </div>
+      {% if avg_rating > 0 %}
+      <div class="hero-stat">
+        <span class="hero-stat-value">{{ avg_rating }}★</span>
+        <span class="hero-stat-label">Avg Rating ({{ rating_count }})</span>
+      </div>
+      {% endif %}
+      <div class="hero-stat">
+        <span class="hero-stat-value">{{ student.streak_weeks }}wk</span>
+        <span class="hero-stat-label">Streak</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+    {% if student.id == current_student.id %}
+    <a href="/profile/{{ student.id }}/edit" class="btn btn-primary btn-sm">
+      <i data-lucide="edit-2" style="width:13px;height:13px;"></i> Edit Profile
+    </a>
+    {% endif %}
+    {% if student.id != current_student.id %}
+    <a href="/sessions" class="btn btn-primary btn-sm">
+      <i data-lucide="calendar-plus" style="width:13px;height:13px;"></i> Schedule Session
+    </a>
+    {% endif %}
+    <a href="/report/{{ student.id }}" class="btn btn-secondary btn-sm">
+      <i data-lucide="file-text" style="width:13px;height:13px;"></i> View Report
+    </a>
+  </div>
+</div>
+
+<!-- Match Score (if viewing someone else) -->
+{% if match_score and student.id != current_student.id %}
+<div class="card mb-4" style="border-color:rgba(124,58,237,0.3);background:rgba(124,58,237,0.05);">
+  <div class="card-header">
+    <div class="card-title">🎯 Match Score with {{ student.name.split()[0] }}</div>
+    <div class="match-score-badge {% if match_score.total >= 70 %}score-high{% elif match_score.total >= 45 %}score-mid{% else %}score-low{% endif %}">
+      {{ match_score.total }}%
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      {% for component, label in [('skill','Skill Compatibility'),('level','Level Match'),('availability','Shared Availability'),('rating','Partner Rating')] %}
+      <div class="score-row">
+        <span class="score-label">{{ label }}</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" data-width="{{ match_score[component] }}%" style="width:{{ match_score[component] }}%;"></div></div>
+        <span class="score-pct">{{ match_score[component] }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div>
+      {% for reason in match_score.reasons %}
+      <div class="text-sm" style="color:var(--text-secondary);padding:3px 0;">✓ {{ reason }}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="cards-grid-2">
+  <!-- Skills Offered -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">💡 Skills Offered</div>
+      <span class="skill-tag tag-offer">{{ offers|length }} skills</span>
+    </div>
+    {% for ss in offers %}
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;">
+        {% if ss.skill.category == 'Programming' %}💻
+        {% elif ss.skill.category == 'Design' %}🎨
+        {% elif ss.skill.category == 'Data Science' %}📊
+        {% elif ss.skill.category == 'Communication' %}🗣
+        {% elif ss.skill.category == 'Creative' %}📸
+        {% elif ss.skill.category == 'Business' %}📈
+        {% else %}⚡{% endif %}
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;">{{ ss.skill.name }}</div>
+        <div style="font-size:11px;color:var(--text-muted);">{{ ss.skill.category }}</div>
+      </div>
+      <span class="prof-badge prof-{{ ss.proficiency }}">{{ ss.proficiency }}</span>
+    </div>
+    {% endfor %}
+    {% if not offers %}
+    <div class="text-muted text-sm">No skills offered yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- Skills Wanted -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🎯 Skills Wanted</div>
+      <span class="skill-tag tag-want">{{ wants|length }} skills</span>
+    </div>
+    {% for ss in wants %}
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;">
+        {% if ss.skill.category == 'Programming' %}💻
+        {% elif ss.skill.category == 'Design' %}🎨
+        {% elif ss.skill.category == 'Data Science' %}📊
+        {% elif ss.skill.category == 'Communication' %}🗣
+        {% elif ss.skill.category == 'Creative' %}📸
+        {% elif ss.skill.category == 'Business' %}📈
+        {% else %}⚡{% endif %}
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;">{{ ss.skill.name }}</div>
+        <div style="font-size:11px;color:var(--text-muted);">{{ ss.skill.category }}</div>
+      </div>
+      <span class="skill-tag tag-want">wanted</span>
+    </div>
+    {% endfor %}
+    {% if not wants %}
+    <div class="text-muted text-sm">No skills wanted listed.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Availability -->
+<div class="card mt-4">
+  <div class="card-header">
+    <div class="card-title">🗓 Weekly Availability</div>
+    {% if student.id != current_student.id %}
+    <button class="btn btn-secondary btn-sm" onclick="checkAvailability({{ current_student.id }}, {{ student.id }}, 'avail-overlap')">
+      Check Shared Slots
+    </button>
+    {% endif %}
+  </div>
+  <div style="overflow-x:auto;">
+    <div class="avail-grid">
+      <div class="avail-cell avail-day-header"></div>
+      {% for day in DAY_NAMES %}
+      <div class="avail-cell avail-day-header">{{ day[:3] }}</div>
+      {% endfor %}
+      {% for hour in range(8, 22) %}
+      <div class="avail-cell" style="font-size:10px;color:var(--text-muted);">{{ '%02d'|format(hour) }}:00</div>
+      {% for day_idx in range(7) %}
+        {% set is_avail = namespace(val=false) %}
+        {% for av in avail_by_day.get(day_idx, []) %}
+          {% if av.start_hour <= hour < av.end_hour %}
+            {% set is_avail.val = true %}
+          {% endif %}
+        {% endfor %}
+      <div class="avail-cell {% if is_avail.val %}available{% endif %}">
+        {% if is_avail.val %}✓{% endif %}
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  <div id="avail-overlap" style="margin-top:12px;"></div>
+</div>
+
+<!-- Badges -->
+<div class="card mt-4">
+  <div class="card-header">
+    <div class="card-title">🏅 Badges</div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    {% for badge in student.badges %}
+    {% set info = BADGE_INFO.get(badge.badge_type, {}) %}
+    <div class="badge-card earned">
+      <div class="badge-icon">{{ info.get('icon','🏅') }}</div>
+      <div class="badge-label">{{ info.get('label', badge.badge_type) }}</div>
+      <div class="badge-desc">{{ info.get('description','') }}</div>
+    </div>
+    {% endfor %}
+    {% if not student.badges %}
+    <div class="text-muted text-sm">No badges earned yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

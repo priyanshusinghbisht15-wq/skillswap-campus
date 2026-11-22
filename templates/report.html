@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Learning Report — {{ student.name }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  <div class="page-header" style="margin-bottom:0;">
+    <h1>📄 Learning Report</h1>
+    <div class="page-subtitle">Comprehensive summary for {{ student.name }}</div>
+  </div>
+  <a href="/report/{{ student.id }}/download" class="btn btn-primary">
+    <i data-lucide="download" style="width:15px;height:15px;"></i> Download as Text
+  </a>
+</div>
+
+<!-- Profile Summary -->
+<div class="report-section" style="background:var(--gradient-hero);border-color:rgba(124,58,237,0.3);">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="avatar avatar-lg avatar-ring" style="background:{{ student.avatar_color }}">{{ student.initials() }}</div>
+    <div>
+      <div style="font-size:24px;font-weight:800;">{{ student.name }}</div>
+      <div style="color:var(--text-secondary);margin-top:2px;">{{ student.course }} · Year {{ student.year }}</div>
+      <div style="color:var(--text-secondary);margin-top:8px;max-width:500px;font-size:14px;line-height:1.6;">{{ student.bio or 'No bio provided.' }}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div style="font-size:32px;font-weight:800;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Lv.{{ student.level }}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent-orange);">{{ student.xp }} XP</div>
+      <div style="font-size:12px;color:var(--text-muted);">{{ student.streak_weeks }}wk streak</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Summary Row -->
+<div class="stats-grid mb-4">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(124,58,237,0.15);">🎓</div>
+    <div class="stat-value">{{ sessions_taught|length }}</div>
+    <div class="stat-label">Sessions Taught</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(59,130,246,0.15);">📖</div>
+    <div class="stat-value">{{ sessions_learned|length }}</div>
+    <div class="stat-label">Sessions Learned</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(245,158,11,0.15);">⭐</div>
+    <div class="stat-value">{{ avg_rating }}/5</div>
+    <div class="stat-label">Average Rating ({{ ratings_received|length }} reviews)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(16,185,129,0.15);">🏅</div>
+    <div class="stat-value">{{ student.badges|length }}</div>
+    <div class="stat-label">Badges Earned</div>
+  </div>
+</div>
+
+<div class="cards-grid-2">
+  <!-- Skills Offered -->
+  <div class="report-section">
+    <div class="report-section-title">💡 Skills Offered</div>
+    {% for ss in student.skills if ss.skill_type == 'offer' %}
+    <div class="skill-match-row">
+      <span style="font-size:14px;">{% if ss.skill.category == 'Programming' %}💻{% elif ss.skill.category == 'Design' %}🎨{% elif ss.skill.category == 'Data Science' %}📊{% else %}⚡{% endif %}</span>
+      <span style="flex:1;font-size:13px;font-weight:600;">{{ ss.skill.name }}</span>
+      <span class="prof-badge prof-{{ ss.proficiency }}">{{ ss.proficiency }}</span>
+    </div>
+    {% else %}
+    <div class="text-muted text-sm">No skills offered.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Skills Learned -->
+  <div class="report-section">
+    <div class="report-section-title">🎯 Skills Wanted / Learning</div>
+    {% for ss in student.skills if ss.skill_type == 'want' %}
+    <div class="skill-match-row">
+      <span style="font-size:14px;">📚</span>
+      <span style="flex:1;font-size:13px;font-weight:600;">{{ ss.skill.name }}</span>
+    </div>
+    {% else %}
+    <div class="text-muted text-sm">No skills listed as wanted.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Teaching History -->
+<div class="report-section">
+  <div class="report-section-title">🎓 Teaching Contributions ({{ sessions_taught|length }} sessions)</div>
+  {% if sessions_taught %}
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Skill</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Learner</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Date</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Duration</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Format</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions_taught %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 8px;font-weight:600;">{{ s.skill.name }}</td>
+          <td style="padding:10px 8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="avatar avatar-sm" style="background:{{ s.learner.avatar_color }}">{{ s.learner.initials() }}</div>
+              {{ s.learner.name }}
+            </div>
+          </td>
+          <td style="padding:10px 8px;color:var(--text-muted);">{{ s.date }}</td>
+          <td style="padding:10px 8px;color:var(--text-muted);">{{ s.duration_minutes }}min</td>
+          <td style="padding:10px 8px;"><span class="skill-tag {% if s.format=='Online' %}tag-want{% else %}tag-offer{% endif %}">{{ s.format }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted text-sm">No completed teaching sessions yet.</div>
+  {% endif %}
+</div>
+
+<!-- Learning History -->
+<div class="report-section">
+  <div class="report-section-title">📖 Learning Sessions ({{ sessions_learned|length }} sessions)</div>
+  {% if sessions_learned %}
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Skill</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Teacher</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Date</th>
+          <th style="text-align:left;padding:8px;color:var(--text-muted);">Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions_learned %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 8px;font-weight:600;">{{ s.skill.name }}</td>
+          <td style="padding:10px 8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="avatar avatar-sm" style="background:{{ s.teacher.avatar_color }}">{{ s.teacher.initials() }}</div>
+              {{ s.teacher.name }}
+            </div>
+          </td>
+          <td style="padding:10px 8px;color:var(--text-muted);">{{ s.date }}</td>
+          <td style="padding:10px 8px;color:var(--text-muted);">{{ s.duration_minutes }}min</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted text-sm">No completed learning sessions yet.</div>
+  {% endif %}
+</div>
+
+<!-- Ratings -->
+{% if ratings_received %}
+<div class="report-section">
+  <div class="report-section-title">⭐ Ratings Received (avg {{ avg_rating }}/5)</div>
+  {% for r in ratings_received %}
+  <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">
+    <div class="avatar avatar-sm" style="background:{{ r.rater.avatar_color }}">{{ r.rater.initials() }}</div>
+    <div style="flex:1;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+        <strong style="font-size:13px;">{{ r.rater.name }}</strong>
+        <div style="color:var(--accent-orange);font-size:13px;">{{ '★' * r.stars }}{{ '☆' * (5 - r.stars) }}</div>
+        <span style="font-size:11px;color:var(--text-muted);">{{ r.created_at.strftime('%Y-%m-%d') if r.created_at else '' }}</span>
+      </div>
+      {% if r.comment %}
+      <div style="font-size:13px;color:var(--text-secondary);font-style:italic;">"{{ r.comment }}"</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Takeaways -->
+{% if takeaways %}
+<div class="report-section">
+  <div class="report-section-title">📝 Learning Takeaways</div>
+  {% for t in takeaways %}
+  <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;border-left:3px solid {% if t.confirmed %}var(--accent-green){% else %}var(--accent-orange){% endif %};">
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">{{ t.content }}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">
+      From session with {{ t.session.teacher.name }} on {{ t.session.skill.name }}
+      {% if t.confirmed %}<span style="color:var(--accent-green);margin-left:6px;">✓ Verified</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Badges -->
+<div class="report-section">
+  <div class="report-section-title">🏅 Badges Earned</div>
+  {% if student.badges %}
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    {% for badge in student.badges %}
+    {% set info = BADGE_INFO.get(badge.badge_type, {}) %}
+    <div style="text-align:center;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-md);padding:12px;">
+      <div style="font-size:28px;">{{ info.get('icon','🏅') }}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-top:4px;">{{ info.get('label',badge.badge_type) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-muted text-sm">No badges earned yet. Complete sessions to earn them!</div>
+  {% endif %}
+</div>
+{% endblock %}

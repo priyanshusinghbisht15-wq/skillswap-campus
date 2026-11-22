@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} Error — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="padding:80px 20px;">
+  <div class="empty-icon" style="font-size:72px;">{% if code == 404 %}🔍{% else %}⚠️{% endif %}</div>
+  <div class="empty-title" style="font-size:28px;font-weight:800;margin-bottom:8px;">{{ code }}</div>
+  <div class="empty-title" style="font-size:18px;">{{ message }}</div>
+  <div class="empty-desc" style="margin-top:8px;max-width:400px;">
+    {% if code == 404 %}The page you're looking for doesn't exist or has moved.
+    {% else %}Something went wrong on our end. Please try again.{% endif %}
+  </div>
+  <a href="/" class="btn btn-primary mt-4">← Back to Dashboard</a>
+</div>
+{% endblock %}

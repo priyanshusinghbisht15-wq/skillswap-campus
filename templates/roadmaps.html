@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Learning Roadmaps — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🗺 Learning Roadmaps</h1>
+  <div class="page-subtitle">Structured paths from beginner to expert — find mentors at every stage</div>
+</div>
+
+{% for rm in roadmaps %}
+<div class="roadmap-card">
+  <div class="roadmap-header">
+    <div class="roadmap-icon" style="border-color:{{ rm.color }};background:rgba(0,0,0,0.2);">{{ rm.icon }}</div>
+    <div style="flex:1;">
+      <div style="font-size:20px;font-weight:800;color:var(--text-primary);">{{ rm.title }}</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">{{ rm.description }}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-size:22px;font-weight:800;color:{{ rm.color }};">{{ rm.progress }}%</div>
+      <div style="font-size:11px;color:var(--text-muted);">Progress</div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div style="margin-bottom:20px;">
+    <div class="progress-wrap thick">
+      <div class="progress-fill" data-width="{{ rm.progress }}%" style="width:{{ rm.progress }}%;background:linear-gradient(90deg, {{ rm.color }}, {{ rm.color }}aa);"></div>
+    </div>
+  </div>
+
+  <!-- Stage Cards -->
+  <div class="roadmap-stages">
+    {% for stage in rm.stages %}
+    <div class="stage-card {% if stage.known %}known{% endif %}">
+      <div class="stage-number">Stage {{ loop.index }}</div>
+      <div class="stage-name">{{ stage.label }}</div>
+      <div class="stage-desc">{{ stage.desc }}</div>
+
+      {% if stage.known %}
+      <div class="stage-checkmark">✓</div>
+      <span class="skill-tag tag-offer" style="font-size:10px;">Completed</span>
+      {% else %}
+      <!-- Mentors -->
+      {% if stage.mentors %}
+      <div style="margin-top:6px;">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Available Mentors:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          {% for mentor in stage.mentors[:3] %}
+          <a href="/profile/{{ mentor.id }}" data-tooltip="{{ mentor.name }}">
+            <div class="avatar avatar-sm" style="background:{{ mentor.avatar_color }}">{{ mentor.initials() }}</div>
+          </a>
+          {% endfor %}
+          {% if stage.mentors|length > 3 %}
+          <span style="font-size:11px;color:var(--text-muted);align-self:center;">+{{ stage.mentors|length - 3 }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <a href="/find-partners?skill_filter={{ stage.skill }}" class="btn btn-ghost btn-sm mt-2" style="font-size:10px;padding:4px 8px;">
+        Find Mentor →
+      </a>
+      {% else %}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">No mentors available yet</div>
+      {% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+<!-- Tips Card -->
+<div class="card" style="background:rgba(6,182,212,0.04);border-color:rgba(6,182,212,0.2);">
+  <div class="card-title mb-3">💡 Pro Tips for Learning</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+    <div style="font-size:13px;color:var(--text-secondary);">
+      <div style="font-size:20px;margin-bottom:6px;">🎯</div>
+      <strong style="color:var(--text-primary);">Set Clear Goals</strong><br>
+      Tell your mentor what you want to achieve in each session.
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);">
+      <div style="font-size:20px;margin-bottom:6px;">📝</div>
+      <strong style="color:var(--text-primary);">Write Takeaways</strong><br>
+      Submit session takeaways to reinforce learning and earn XP.
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);">
+      <div style="font-size:20px;margin-bottom:6px;">🔄</div>
+      <strong style="color:var(--text-primary);">Teach Others</strong><br>
+      The best way to master a skill is to teach it to someone else.
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);">
+      <div style="font-size:20px;margin-bottom:6px;">⭐</div>
+      <strong style="color:var(--text-primary);">Rate Your Sessions</strong><br>
+      Honest ratings help everyone find the best mentors on campus.
+    </div>
+  </div>
+</div>
+{% endblock %}

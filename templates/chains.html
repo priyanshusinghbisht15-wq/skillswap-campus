@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Skill Swap Chains — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>⛓ Skill Swap Chains</h1>
+  <div class="page-subtitle">Discover multi-way skill exchange cycles — everyone teaches and everyone learns</div>
+</div>
+
+<!-- Explainer -->
+<div class="card mb-4" style="background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.3);">
+  <div style="display:flex;gap:16px;align-items:flex-start;">
+    <div style="font-size:36px;flex-shrink:0;">🔄</div>
+    <div>
+      <div class="card-title mb-2">What are Skill Swap Chains?</div>
+      <div style="font-size:14px;color:var(--text-secondary);line-height:1.7;">
+        A Skill Swap Chain is a cycle where each person teaches one person and learns from another — no one needs to have the same skill.
+        Instead of one-to-one swaps, chains unlock <strong style="color:var(--text-primary);">multi-person skill exchanges</strong> across the campus.
+      </div>
+      <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
+        <div style="font-size:13px;color:var(--accent-green);">✓ Fair — everyone contributes</div>
+        <div style="font-size:13px;color:var(--accent-green);">✓ Efficient — no skill needed in common</div>
+        <div style="font-size:13px;color:var(--accent-green);">✓ Community-building</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results Summary -->
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+  <div style="font-size:15px;color:var(--text-secondary);">
+    Found <strong style="color:var(--text-primary);font-size:20px;">{{ chains|length }}</strong> skill swap chains
+  </div>
+  <a href="/chains" class="btn btn-primary btn-sm">
+    <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Rediscover Chains
+  </a>
+  {% if chains %}
+  <span class="skill-tag tag-offer">{{ chains|selectattr('length','equalto',3)|list|length }} × 3-person</span>
+  <span class="skill-tag tag-want">{{ chains|selectattr('length','greaterthan',3)|list|length }} × 4-5 person</span>
+  {% endif %}
+</div>
+
+{% if chains %}
+  {% for chain in chains %}
+  <div class="chain-card">
+    <div class="chain-card-header">
+      <span class="chain-length-badge">{{ chain.length }}-Person Chain</span>
+      <div class="chain-title">
+        {% set names = [] %}
+        {% for step in chain.steps[:chain.length-1] %}
+          {% if names.append(step.from_student.name.split()[0]) %}{% endif %}
+        {% endfor %}
+        {{ names | join(' → ') }}
+      </div>
+    </div>
+
+    <!-- Visual chain diagram -->
+    <div style="overflow-x:auto;padding:8px 0;">
+      <div class="chain-container">
+        {% for step in chain.steps %}
+        <div class="chain-node">
+          <div class="avatar avatar-md" style="background:{{ step.from_student.avatar_color }}">
+            {{ step.from_student.initials() }}
+          </div>
+          <div class="chain-node-name">{{ step.from_student.name.split()[0] }}</div>
+          <div style="font-size:10px;color:var(--text-muted);">{{ step.from_student.course.split()[0] }}</div>
+        </div>
+        <div class="chain-arrow">
+          <div class="chain-skill-label">{{ step.skill }}</div>
+          <div class="chain-arrow-line">→</div>
+        </div>
+        {% endfor %}
+        <!-- Close the loop: show the first student again -->
+        {% if chain.steps %}
+        <div class="chain-node">
+          <div class="avatar avatar-md" style="background:{{ chain.steps[0].from_student.avatar_color }};opacity:0.7;border:2px dashed {{ chain.steps[0].from_student.avatar_color }};">
+            {{ chain.steps[0].from_student.initials() }}
+          </div>
+          <div class="chain-node-name" style="color:var(--text-muted);">{{ chain.steps[0].from_student.name.split()[0] }}</div>
+          <div style="font-size:10px;color:var(--text-muted);">↩ back to start</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Explanation -->
+    <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-sm);padding:12px;margin-top:8px;">
+      <div style="font-size:12px;font-weight:600;color:var(--accent-cyan);margin-bottom:6px;">💡 Why this chain works:</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+        {% for step in chain.steps %}
+        <strong style="color:var(--text-primary);">{{ step.from_student.name.split()[0] }}</strong>
+        teaches <span style="color:var(--accent-cyan);">{{ step.skill }}</span>
+        to <strong style="color:var(--text-primary);">{{ step.to_student.name.split()[0] }}</strong>{% if not loop.last %}, who then {% endif %}{% if loop.last %}.{% endif %}
+        {% endfor %}
+        <br>Every participant both teaches and learns — creating a fair, circular exchange.
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      {% for step in chain.steps %}
+      <a href="/profile/{{ step.from_student.id }}" class="btn btn-ghost btn-sm">
+        {{ step.from_student.name.split()[0] }}'s Profile
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🔗</div>
+  <div class="empty-title">No chains discovered yet</div>
+  <div class="empty-desc">Chains appear when students' skills form a circular exchange. Add more skills to your profile to participate.</div>
+  <a href="/profile/{{ current_student.id }}/edit" class="btn btn-primary mt-3">Update My Skills</a>
+</div>
+{% endif %}
+
+<!-- How the Algorithm Works -->
+<div class="card mt-4" style="background:rgba(6,182,212,0.04);border-color:rgba(6,182,212,0.2);">
+  <div class="card-title mb-3">⚙️ How the Chain Algorithm Works</div>
+  <div style="font-size:14px;color:var(--text-secondary);line-height:1.8;">
+    <p><strong style="color:var(--text-primary);">1. Build a directed graph</strong> — Each student is a node. A directed edge A→B exists if A offers a skill that B wants.</p>
+    <p><strong style="color:var(--text-primary);">2. Find all simple cycles</strong> — Using depth-first search (DFS), we detect cycles of length 3 to 5 in the graph.</p>
+    <p><strong style="color:var(--text-primary);">3. Deduplicate</strong> — Canonical forms prevent showing the same cycle multiple times rotated.</p>
+    <p><strong style="color:var(--text-primary);">4. Rank by length</strong> — Shorter chains are shown first (3-person chains are the most practical).</p>
+  </div>
+</div>
+{% endblock %}

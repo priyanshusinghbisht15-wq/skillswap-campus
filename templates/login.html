@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Sign In — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo-badge">⚡</div>
+      <h1 class="auth-title">Welcome to SkillSwap</h1>
+      <p class="auth-subtitle">"Your skills are someone else's next breakthrough."</p>
+    </div>
+
+    <form method="POST" action="/login" class="auth-form">
+      {% if next %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label" for="email">Campus Email</label>
+        <div class="input-icon-wrap">
+          <input type="email" id="email" name="email" class="form-control" placeholder="e.g. asha@campus.edu" required autofocus>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <label class="form-label" for="password" style="margin-bottom:0;">Password</label>
+          <button type="button" class="btn-text-sm" onclick="togglePasswordVisibility('password')">Show</button>
+        </div>
+        <div class="input-icon-wrap">
+          <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:12px;">
+        Sign In to Campus
+      </button>
+
+      <div class="auth-footer-text">
+        Don't have an account yet? <a href="/register" class="auth-link">Join SkillSwap Campus →</a>
+      </div>
+    </form>
+
+    <!-- Quick 1-Click Demo Login Section -->
+    <div class="demo-auth-divider">
+      <span>OR 1-CLICK DEMO SIGN-IN</span>
+    </div>
+
+    <div class="demo-auth-notice">
+      <span class="badge-pill">🎓 Hackathon Demo</span>
+      Click any student to sign in instantly as their account. All sample accounts share the password: <code>password123</code>
+    </div>
+
+    <div class="demo-students-grid">
+      {% for s in demo_students %}
+      <a href="/quick-login/{{ s.id }}{% if next %}?next={{ next }}{% endif %}" class="demo-student-card">
+        <div class="avatar avatar-sm" style="background:{{ s.avatar_color }}">{{ s.initials() }}</div>
+        <div class="demo-student-info">
+          <div class="demo-student-name">{{ s.name }}</div>
+          <div class="demo-student-meta">{{ s.course }} · Yr {{ s.year }}</div>
+        </div>
+        <span class="demo-login-arrow">→</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePasswordVisibility(id) {
+  const input = document.getElementById(id);
+  const btn = event.target;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'Hide';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'Show';
+  }
+}
+</script>
+{% endblock %}

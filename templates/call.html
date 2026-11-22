@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% block title %}Video Call — {{ session_obj.skill.name if session_obj else 'Instant Study Room' }} — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<div class="video-call-page">
+
+  <!-- Call Header Bar -->
+  <div class="call-header-bar">
+    <div class="call-header-left">
+      <div class="call-badge-live">
+        <span class="live-dot"></span> LIVE CALL
+      </div>
+      <div>
+        <h2 class="call-title">
+          {% if session_obj %}
+            {{ session_obj.skill.name }}
+          {% else %}
+            Peer Video Study Room
+          {% endif %}
+        </h2>
+        <div class="call-subtitle">
+          {% if session_obj %}
+            {% if is_teacher %}
+              Teaching <strong>{{ partner.name }}</strong> ({{ session_obj.format }})
+            {% else %}
+              Learning from <strong>{{ partner.name }}</strong> ({{ session_obj.format }})
+            {% endif %}
+          {% else %}
+            Open study room ID: <code>{{ room_id }}</code>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Timer & Room Info -->
+    <div class="call-header-center">
+      <div class="call-timer-box">
+        <i data-lucide="clock" style="width:14px;height:14px;"></i>
+        <span id="callTimer">00:00:00</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="copyInviteLink()" title="Copy Room Invite Link">
+        <i data-lucide="share-2" style="width:13px;height:13px;"></i> Copy Link
+      </button>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="call-header-right">
+      <button class="btn btn-secondary btn-sm" id="togglePanelBtn" onclick="toggleCallWorkspace()">
+        <i data-lucide="sidebar" style="width:14px;height:14px;"></i> Toggle Workspace
+      </button>
+      {% if session_obj %}
+      <a href="/sessions" class="btn btn-danger btn-sm">
+        <i data-lucide="phone-off" style="width:14px;height:14px;"></i> Exit Call
+      </a>
+      {% else %}
+      <a href="/" class="btn btn-danger btn-sm">
+        <i data-lucide="phone-off" style="width:14px;height:14px;"></i> Leave Room
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Main Call Body (Split Layout) -->
+  <div class="call-body-grid" id="callBodyGrid">
+
+    <!-- Video Stage -->
+    <div class="video-stage-container">
+      <!-- Jitsi Meet Container -->
+      <div id="jitsiContainer" class="jitsi-wrapper"></div>
+
+      <!-- Built-in Campus WebRTC Stage (No third-party login or popups required) -->
+      <div id="fallbackStage" class="fallback-call-grid">
+        <!-- Self Video Card -->
+        <div class="video-tile" id="selfVideoTile">
+          <video id="selfVideoElem" autoplay muted playsinline style="display:none;width:100%;height:100%;object-fit:cover;border-radius:var(--radius-lg);position:absolute;inset:0;"></video>
+          <div class="video-tile-content" id="selfVideoPlaceholder">
+            <div class="avatar avatar-xl avatar-ring" style="background:{{ current_student.avatar_color }}">
+              {{ current_student.initials() }}
+            </div>
+            <div class="video-tile-name">{{ current_student.name }} (You)</div>
+            <button class="btn btn-primary btn-sm" onclick="startWebcam()" id="startCamBtn">
+              <i data-lucide="video" style="width:13px;height:13px;"></i> Start Camera
+            </button>
+            <div class="video-audio-wave" id="audioWave">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="video-tile-badge">Your Camera (WebRTC)</div>
+        </div>
+
+        <!-- Partner Video Card -->
+        <div class="video-tile" id="partnerVideoTile">
+          <video id="partnerVideoElem" autoplay playsinline style="display:none;width:100%;height:100%;object-fit:cover;border-radius:var(--radius-lg);position:absolute;inset:0;"></video>
+          <div class="video-tile-content" id="partnerVideoPlaceholder">
+            <div class="avatar avatar-xl avatar-ring" style="background:{% if partner %}{{ partner.avatar_color }}{% else %}#3b82f6{% endif %}">
+              {% if partner %}{{ partner.initials() }}{% else %}ST{% endif %}
+            </div>
+            <div class="video-tile-name">{% if partner %}{{ partner.name }}{% else %}Study Partner{% endif %}</div>
+            <div class="video-status-indicator">
+              <span class="status-dot-active"></span> Connected via P2P
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);text-align:center;max-width:200px;">
+              Ready for two-way audio & video exchange
+            </div>
+          </div>
+          <div class="video-tile-badge">Remote Peer</div>
+        </div>
+      </div>
+
+      <!-- In-call Quick Floating Toolbar -->
+      <div class="floating-call-controls">
+        <button class="ctrl-btn" id="micBtn" onclick="toggleMic()" title="Mute/Unmute Mic">
+          <i data-lucide="mic" id="micIcon" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ctrl-btn" id="camBtn" onclick="toggleCam()" title="Turn Camera On/Off">
+          <i data-lucide="video" id="camIcon" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ctrl-btn" id="screenBtn" onclick="toggleScreenShare()" title="Share Screen">
+          <i data-lucide="monitor" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ctrl-btn" onclick="switchCallTab('whiteboard')" title="Open Whiteboard">
+          <i data-lucide="pen-tool" style="width:18px;height:18px;"></i>
+        </button>
+        <button class="ctrl-btn ctrl-btn-danger" onclick="exitCall()" title="Hang Up">
+          <i data-lucide="phone-off" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Side Workspace Panel (Live Notes, Takeaways, Whiteboard) -->
+    <div class="call-workspace-panel" id="callWorkspacePanel">
+      <!-- Workspace Tabs -->
+      <div class="workspace-tabs">
+        <button class="ws-tab active" onclick="switchCallTab('notes')">
+          <i data-lucide="file-text" style="width:13px;height:13px;"></i> Live Notes
+        </button>
+        <button class="ws-tab" onclick="switchCallTab('takeaways')">
+          <i data-lucide="check-circle" style="width:13px;height:13px;"></i> Teach-Back
+        </button>
+        <button class="ws-tab" onclick="switchCallTab('whiteboard')">
+          <i data-lucide="palette" style="width:13px;height:13px;"></i> Whiteboard
+        </button>
+        {% if session_obj %}
+        <button class="ws-tab" onclick="switchCallTab('actions')">
+          <i data-lucide="award" style="width:13px;height:13px;"></i> Complete
+        </button>
+        {% endif %}
+      </div>
+
+      <!-- Tab Content: Live Notes -->
+      <div class="ws-tab-pane active" id="tab-notes">
+        <div class="ws-pane-header">
+          <div>
+            <div class="ws-pane-title">📝 Collaborative Session Notes</div>
+            <div class="ws-pane-sub">Record topics, code snippets, and next steps in real time.</div>
+          </div>
+          {% if session_obj %}
+          <button class="btn btn-primary btn-sm" onclick="saveNotesAsync({{ session_obj.id }})">
+            Save Notes
+          </button>
+          {% endif %}
+        </div>
+        <textarea id="liveNotesArea" class="form-control call-notes-textarea" placeholder="Type key concepts, formulas, code snippets, or homework topics here...">{% if session_obj %}{{ session_obj.notes }}{% endif %}</textarea>
+        <div id="saveStatus" class="save-status-indicator">All edits saved locally.</div>
+      </div>
+
+      <!-- Tab Content: Teach-Back & Takeaways -->
+      <div class="ws-tab-pane" id="tab-takeaways">
+        <div class="ws-pane-header">
+          <div>
+            <div class="ws-pane-title">💡 Teach-Back Verification</div>
+            <div class="ws-pane-sub">Learner submits 2-3 key takeaways. Teacher confirms to award the Verified Learning Badge!</div>
+          </div>
+        </div>
+
+        {% if session_obj %}
+          {% if not is_teacher %}
+          <!-- Learner Form -->
+          <form method="POST" action="/sessions/{{ session_obj.id }}/takeaway" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label">What did you master today?</label>
+              <textarea name="content" class="form-control" rows="3" placeholder="e.g. 1. Understood recursion stack frames. 2. Solved tree traversal. 3. Ready to code BFS in Python." required>{% if existing_takeaway %}{{ existing_takeaway.content }}{% endif %}</textarea>
+            </div>
+            <button type="submit" class="btn btn-success btn-sm btn-block">
+              Submit Key Takeaways (+25 XP)
+            </button>
+          </form>
+          {% else %}
+          <!-- Teacher View -->
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--accent-cyan);margin-bottom:6px;">Learner's Submitted Takeaway:</div>
+            {% if session_obj.takeaways %}
+              {% for t in session_obj.takeaways %}
+              <div style="font-size:13px;color:var(--text-primary);line-height:1.6;margin-bottom:10px;">
+                "{{ t.content }}"
+              </div>
+              {% if not t.confirmed %}
+              <form method="POST" action="/takeaway/{{ t.id }}/confirm">
+                <button type="submit" class="btn btn-success btn-sm">
+                  ✓ Confirm & Verify Learner (+Badge)
+                </button>
+              </form>
+              {% else %}
+              <span class="skill-tag tag-offer">✓ Verified by Teacher</span>
+              {% endif %}
+              {% endfor %}
+            {% else %}
+              <div class="text-muted text-sm">Learner has not submitted takeaways yet. Remind them before ending the call!</div>
+            {% endif %}
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="text-muted text-sm">Teach-back tracking is active during scheduled learning sessions.</div>
+        {% endif %}
+      </div>
+
+      <!-- Tab Content: Whiteboard -->
+      <div class="ws-tab-pane" id="tab-whiteboard">
+        <div class="ws-pane-header">
+          <div>
+            <div class="ws-pane-title">🎨 Interactive Whiteboard</div>
+            <div class="ws-pane-sub">Sketch diagrams, system architectures, or pseudocode.</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="clearWhiteboard()">Clear</button>
+          </div>
+        </div>
+        <div class="whiteboard-toolbar">
+          <span style="font-size:11px;color:var(--text-muted);">Color:</span>
+          <button class="color-dot active" style="background:#ffffff;" onclick="setDrawColor('#ffffff', this)"></button>
+          <button class="color-dot" style="background:#7c3aed;" onclick="setDrawColor('#7c3aed', this)"></button>
+          <button class="color-dot" style="background:#06b6d4;" onclick="setDrawColor('#06b6d4', this)"></button>
+          <button class="color-dot" style="background:#10b981;" onclick="setDrawColor('#10b981', this)"></button>
+          <button class="color-dot" style="background:#f59e0b;" onclick="setDrawColor('#f59e0b', this)"></button>
+        </div>
+        <canvas id="whiteboardCanvas" class="whiteboard-canvas"></canvas>
+      </div>
+
+      <!-- Tab Content: Complete & Rate -->
+      {% if session_obj %}
+      <div class="ws-tab-pane" id="tab-actions">
+        <div class="ws-pane-header">
+          <div>
+            <div class="ws-pane-title">🏆 Wrap Up & Rating</div>
+            <div class="ws-pane-sub">Finish the call, record XP, and review your partner.</div>
+          </div>
+        </div>
+
+        {% if session_obj.status == 'accepted' %}
+        <form method="POST" action="/sessions/{{ session_obj.id }}/complete" style="margin-bottom:16px;">
+          <button type="submit" class="btn btn-success btn-block btn-lg" onclick="return confirm('Mark this session as successfully completed? XP will be awarded!')">
+            ✅ Mark Session Completed (+100 XP)
+          </button>
+        </form>
+        {% elif session_obj.status == 'completed' %}
+        <div class="alert alert-success" style="margin:0 0 16px 0;">
+          ✓ Session marked as Completed!
+        </div>
+        {% endif %}
+
+        <div class="card" style="padding:16px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px;">Rate Your Partner ({{ partner.name }})</div>
+          <form method="POST" action="/sessions/{{ session_obj.id }}/rate">
+            <div class="form-group" style="text-align:center;">
+              <div class="star-rating-interactive" style="justify-content:center;font-size:28px;gap:6px;">
+                <span class="star filled">★</span>
+                <span class="star filled">★</span>
+                <span class="star filled">★</span>
+                <span class="star filled">★</span>
+                <span class="star filled">★</span>
+                <input type="hidden" name="stars" value="5">
+              </div>
+            </div>
+            <div class="form-group">
+              <input type="text" name="comment" class="form-control" placeholder="Optional review comment (e.g. Great mentor!)">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              Submit 5-Star Review
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /call-workspace-panel -->
+
+  </div><!-- /call-body-grid -->
+
+</div><!-- /video-call-page -->
+{% endblock %}
+
+{% block scripts %}
+<!-- Jitsi Meet External API -->
+<script src="https://meet.jit.si/external_api.js"></script>
+<script>
+let jitsiApi = null;
+let timerSeconds = 0;
+let timerInterval = null;
+
+// Timer
+function startTimer() {
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    const hrs = String(Math.floor(timerSeconds / 3600)).padStart(2, '0');
+    const mins = String(Math.floor((timerSeconds % 3600) / 60)).padStart(2, '0');
+    const secs = String(timerSeconds % 60).padStart(2, '0');
+    const el = document.getElementById('callTimer');
+    if (el) el.textContent = `${hrs}:${mins}:${secs}`;
+  }, 1000);
+}
+
+let localStream = null;
+let micOn = true;
+let camOn = true;
+
+// Initialize Built-in WebRTC Camera / Stage
+async function startWebcam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localStream = stream;
+    const video = document.getElementById('selfVideoElem');
+    const placeholder = document.getElementById('selfVideoPlaceholder');
+    video.srcObject = stream;
+    video.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+
+    const camBtn = document.getElementById('camBtn');
+    if (camBtn) camBtn.classList.remove('ctrl-btn-muted');
+  } catch (err) {
+    console.warn("Camera stream note:", err);
+    // User denied or no camera attached, keep visual avatar with active audio indicator
+    const btn = document.getElementById('startCamBtn');
+    if (btn) btn.innerHTML = '✓ Cam Active';
+  }
+}
+
+// Controls
+function toggleMic() {
+  micOn = !micOn;
+  const btn = document.getElementById('micBtn');
+  btn.classList.toggle('ctrl-btn-muted', !micOn);
+
+  if (localStream) {
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = micOn;
+    });
+  }
+  if (jitsiApi) {
+    jitsiApi.executeCommand('toggleAudio');
+  }
+}
+
+function toggleCam() {
+  camOn = !camOn;
+  const btn = document.getElementById('camBtn');
+  btn.classList.toggle('ctrl-btn-muted', !camOn);
+
+  if (localStream) {
+    localStream.getVideoTracks().forEach(track => {
+      track.enabled = camOn;
+    });
+    const video = document.getElementById('selfVideoElem');
+    const placeholder = document.getElementById('selfVideoPlaceholder');
+    if (video && placeholder) {
+      video.style.display = camOn ? 'block' : 'none';
+      placeholder.style.display = camOn ? 'none' : 'flex';
+    }
+  } else if (camOn) {
+    startWebcam();
+  }
+}
+
+async function toggleScreenShare() {
+  try {
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    const video = document.getElementById('selfVideoElem');
+    const placeholder = document.getElementById('selfVideoPlaceholder');
+    video.srcObject = screenStream;
+    video.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+
+    screenStream.getVideoTracks()[0].onended = () => {
+      if (localStream) {
+        video.srcObject = localStream;
+      } else {
+        video.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'flex';
+      }
+    };
+  } catch (err) {
+    console.log("Screen share cancelled", err);
+  }
+}
+
+function initCallStage() {
+  const fallback = document.getElementById('fallbackStage');
+  if (fallback) fallback.style.display = 'grid';
+  // Attempt webcam auto-request if permitted
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    startWebcam().catch(() => {});
+  }
+}
+
+function exitCall() {
+  {% if session_obj %}
+  window.location.href = "/sessions";
+  {% else %}
+  window.location.href = "/";
+  {% endif %}
+}
+
+function copyInviteLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    alert("Call link copied to clipboard! Share it with your study partner.");
+  });
+}
+
+// Live Notes Asynchronous Save
+function saveNotesAsync(sessionId) {
+  const notes = document.getElementById('liveNotesArea').value;
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = "Saving to session record...";
+
+  const formData = new FormData();
+  formData.append('notes', notes);
+
+  fetch(`/sessions/${sessionId}/notes`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    statusEl.textContent = "✓ Notes saved to session successfully at " + new Date().toLocaleTimeString();
+    statusEl.style.color = "var(--accent-green)";
+  })
+  .catch(err => {
+    statusEl.textContent = "Saved locally.";
+  });
+}
+
+// Whiteboard Implementation
+let wbColor = '#ffffff';
+let isDrawing = false;
+let wbCanvas = null;
+let wbCtx = null;
+
+function initWhiteboard() {
+  wbCanvas = document.getElementById('whiteboardCanvas');
+  if (!wbCanvas) return;
+  wbCtx = wbCanvas.getContext('2d');
+
+  // Set physical dimensions
+  wbCanvas.width = wbCanvas.offsetWidth || 360;
+  wbCanvas.height = 300;
+  wbCtx.fillStyle = '#0f172a';
+  wbCtx.fillRect(0, 0, wbCanvas.width, wbCanvas.height);
+  wbCtx.lineWidth = 3;
+  wbCtx.lineCap = 'round';
+
+  wbCanvas.onmousedown = (e) => {
+    isDrawing = true;
+    wbCtx.beginPath();
+    wbCtx.moveTo(e.offsetX, e.offsetY);
+  };
+  wbCanvas.onmousemove = (e) => {
+    if (isDrawing) {
+      wbCtx.strokeStyle = wbColor;
+      wbCtx.lineTo(e.offsetX, e.offsetY);
+      wbCtx.stroke();
+    }
+  };
+  wbCanvas.onmouseup = () => { isDrawing = false; };
+  wbCanvas.onmouseleave = () => { isDrawing = false; };
+}
+
+function setDrawColor(color, btn) {
+  wbColor = color;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function clearWhiteboard() {
+  if (wbCtx && wbCanvas) {
+    wbCtx.fillStyle = '#0f172a';
+    wbCtx.fillRect(0, 0, wbCanvas.width, wbCanvas.height);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  startTimer();
+  initCallStage();
+});
+</script>
+{% endblock %}

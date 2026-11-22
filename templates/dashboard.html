@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SkillSwap Campus{% endblock %}
+
+{% block content %}
+<!-- Demo Banner -->
+<div class="demo-banner">
+  📊 Demo Mode — All data is sample data. Switch students using the sidebar to explore different perspectives.
+</div>
+
+<!-- Hero Section -->
+<div class="hero-section">
+  <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+    <div class="avatar avatar-xl avatar-ring" style="background:{{ current_student.avatar_color }}">
+      {{ current_student.initials() }}
+    </div>
+    <div style="flex:1;">
+      <div class="hero-greeting">Welcome back</div>
+      <div class="hero-name">{{ current_student.name }}</div>
+      <div class="hero-tagline">{{ current_student.course }}, Year {{ current_student.year }} · {{ current_student.bio[:80] }}{% if current_student.bio|length > 80 %}…{% endif %}</div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value">{{ current_student.xp }}</span>
+          <span class="hero-stat-label">XP Points</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">Lv. {{ current_student.level }}</span>
+          <span class="hero-stat-label">Level</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value">{{ current_student.streak_weeks }}wk</span>
+          <span class="hero-stat-label">Streak</span>
+        </div>
+        <div class="hero-stat" style="min-width:160px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span class="hero-stat-label">Level Progress</span>
+            <span style="font-size:11px;color:var(--accent-cyan);">{{ current_student.level_progress_pct() }}%</span>
+          </div>
+          <div class="progress-wrap" style="width:140px;">
+            <div class="progress-fill" data-width="{{ current_student.level_progress_pct() }}%" style="width:{{ current_student.level_progress_pct() }}%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+  <a href="/find-partners" class="btn btn-primary"><i data-lucide="users" style="width:15px;height:15px;"></i> Find Partners</a>
+  <a href="/call" class="btn btn-secondary" style="border-color:rgba(124,58,237,0.4);"><i data-lucide="video" style="width:15px;height:15px;color:var(--accent-cyan);"></i> Video Study Room</a>
+  <a href="/sessions" class="btn btn-secondary"><i data-lucide="calendar" style="width:15px;height:15px;"></i> Sessions</a>
+  <a href="/chains" class="btn btn-secondary"><i data-lucide="git-fork" style="width:15px;height:15px;"></i> Skill Chains</a>
+  <a href="/roadmaps" class="btn btn-secondary"><i data-lucide="map" style="width:15px;height:15px;"></i> Roadmaps</a>
+  <a href="/achievements" class="btn btn-secondary"><i data-lucide="award" style="width:15px;height:15px;"></i> Achievements</a>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(124,58,237,0.15);color:var(--accent-purple);">🎓</div>
+    <div class="stat-value">{{ completed_count }}</div>
+    <div class="stat-label">Sessions Completed</div>
+    <div class="stat-change">↑ Active learner</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(59,130,246,0.15);color:var(--accent-blue);">📚</div>
+    <div class="stat-value">{{ skills_learning }}</div>
+    <div class="stat-label">Skills Being Learned</div>
+    <div class="stat-change">Curious mind</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--accent-green);">⏱</div>
+    <div class="stat-value">{{ teaching_hours }}h</div>
+    <div class="stat-label">Teaching Hours</div>
+    <div class="stat-change">↑ Keep it up!</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--accent-orange);">⚡</div>
+    <div class="stat-value">{{ current_student.xp }}</div>
+    <div class="stat-label">XP Points</div>
+    <div class="stat-change">Level {{ current_student.level }}</div>
+  </div>
+</div>
+
+<!-- Two-column layout -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:24px;" class="responsive-grid">
+
+  <!-- Recommended Partners -->
+  <div>
+    <div class="section-heading">🤝 Recommended Partners</div>
+    {% if top_matches %}
+      {% for partner, score in top_matches %}
+      <div class="partner-card" style="margin-bottom:14px;" data-name="{{ partner.name }}" data-skills="{% for ss in partner.skills %}{{ ss.skill.name }} {% endfor %}">
+        <div class="partner-top">
+          <div class="avatar avatar-md" style="background:{{ partner.avatar_color }}">{{ partner.initials() }}</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;">{{ partner.name }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ partner.course }} · Year {{ partner.year }}</div>
+          </div>
+          <div class="match-score-badge {% if score.total >= 70 %}score-high{% elif score.total >= 45 %}score-mid{% else %}score-low{% endif %}">
+            {{ score.total }}%
+          </div>
+        </div>
+        <div class="skill-tags">
+          {% for sk in score.b_teaches_a %}
+          <span class="skill-tag tag-offer" data-tooltip="They can teach you">📖 {{ sk }}</span>
+          {% endfor %}
+          {% for sk in score.a_teaches_b %}
+          <span class="skill-tag tag-want" data-tooltip="You can teach them">✏ {{ sk }}</span>
+          {% endfor %}
+        </div>
+        {% for reason in score.reasons[:2] %}
+        <div class="text-sm text-muted">• {{ reason }}</div>
+        {% endfor %}
+        <div style="display:flex;gap:8px;">
+          <a href="/profile/{{ partner.id }}" class="btn btn-ghost btn-sm">View Profile</a>
+          <a href="/sessions?tab=all" class="btn btn-primary btn-sm">Schedule</a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No matches found</div>
+      <div class="empty-desc">Add skills to your profile to find matching partners.</div>
+    </div>
+    {% endif %}
+    <a href="/find-partners" class="btn btn-secondary btn-sm" style="margin-top:8px;">View All Partners →</a>
+  </div>
+
+  <!-- Right column -->
+  <div>
+    <!-- Upcoming Sessions -->
+    <div class="section-heading">📅 Upcoming Sessions</div>
+    {% if upcoming %}
+      {% for s in upcoming %}
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <div class="avatar avatar-sm" style="background:{% if s.teacher_id == current_student.id %}{{ s.learner.avatar_color }}{% else %}{{ s.teacher.avatar_color }}{% endif %}">
+            {% if s.teacher_id == current_student.id %}{{ s.learner.initials() }}{% else %}{{ s.teacher.initials() }}{% endif %}
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;">{{ s.skill.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">
+              {% if s.teacher_id == current_student.id %}Teaching {{ s.learner.name.split()[0] }}{% else %}Learning from {{ s.teacher.name.split()[0] }}{% endif %}
+            </div>
+          </div>
+          <span class="status-pill tag-{{ s.status }}">{{ s.status }}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:6px;">
+          <span>{{ s.date }} · {{ s.start_time }} · {{ s.duration_minutes }}m</span>
+          {% if s.format == 'Online' and s.status in ['accepted', 'completed'] %}
+          <a href="/sessions/{{ s.id }}/call" class="btn btn-primary btn-sm" style="padding:2px 8px;font-size:11px;">
+            🎥 Call
+          </a>
+          {% else %}
+          <span>{{ s.format }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:24px;">
+      <div class="empty-icon" style="font-size:32px;">📅</div>
+      <div class="empty-title" style="font-size:14px;">No upcoming sessions</div>
+      <a href="/find-partners" class="btn btn-primary btn-sm mt-3">Find Partners</a>
+    </div>
+    {% endif %}
+
+    <!-- Badges -->
+    <div class="section-heading mt-4">🏅 Recent Badges</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      {% for badge in current_student.badges %}
+      {% set info = BADGE_INFO.get(badge.badge_type, {}) %}
+      <div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:var(--radius-md);padding:8px 12px;text-align:center;" data-tooltip="{{ info.get('label','Badge') }}">
+        <div style="font-size:22px;">{{ info.get('icon','🏅') }}</div>
+        <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;">{{ info.get('label','Badge') }}</div>
+      </div>
+      {% endfor %}
+      {% if not current_student.badges %}
+      <div style="font-size:13px;color:var(--text-muted);padding:8px;">Complete sessions to earn badges!</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Skill Gap Mini Chart + Activity Feed -->
+<div class="cards-grid-2" style="margin-bottom:24px;">
+  <div class="chart-container">
+    <div class="card-header">
+      <div class="card-title">📊 Campus Skill Overview</div>
+      <a href="/heatmap" class="btn btn-ghost btn-sm">Full Heatmap →</a>
+    </div>
+    <canvas id="dashboardChart" height="200"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">⚡ Recent Activity</div>
+    </div>
+    {% for s in recent %}
+    <div class="activity-item">
+      <div class="activity-icon" style="background:rgba(124,58,237,0.15);">
+        {% if s.status == 'completed' %}✅{% elif s.status == 'pending' %}⏳{% else %}🔵{% endif %}
+      </div>
+      <div>
+        <div class="activity-text">
+          {% if s.teacher_id == current_student.id %}
+          <strong>Taught</strong> {{ s.skill.name }} to <strong>{{ s.learner.name.split()[0] }}</strong>
+          {% else %}
+          <strong>Learned</strong> {{ s.skill.name }} from <strong>{{ s.teacher.name.split()[0] }}</strong>
+          {% endif %}
+        </div>
+        <div class="activity-time">{{ s.date }} · {{ s.status.upper() }}</div>
+      </div>
+    </div>
+    {% endfor %}
+    {% if not recent %}
+    <div class="text-muted text-sm" style="padding:8px;">No activity yet. Start a session!</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('dashboardChart');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [
+        {
+          label: 'Offering',
+          data: {{ chart_offers|safe }},
+          backgroundColor: 'rgba(16,185,129,0.55)',
+          borderColor: 'rgba(16,185,129,0.9)',
+          borderWidth: 1,
+          borderRadius: 5,
+        },
+        {
+          label: 'Wanting',
+          data: {{ chart_wants|safe }},
+          backgroundColor: 'rgba(124,58,237,0.45)',
+          borderColor: 'rgba(124,58,237,0.8)',
+          borderWidth: 1,
+          borderRadius: 5,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+      },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#64748b', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      }
+    }
+  });
+}
+</script>
+<style>
+@media(max-width:900px){.responsive-grid{grid-template-columns:1fr!important;}}
+</style>
+{% endblock %}
